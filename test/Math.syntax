@@ -1,0 +1,15 @@
+
+syntax MathDSL (program) {
+  program = stmts | stmt    ;
+  stmts = stmt program      ;
+  stmt = expr "end"         ;
+  expr = add | sub | term   ;
+  add = expr "plus" term    ;
+  sub = expr "minus" term   ;
+  term = mul | div | factor ;
+  mul = term "mul" factor   ; 
+  div = term "div" factor   ; 
+  factor = paren | num      ; 
+  paren = "lp" expr "rp"    ; 
+  num = int                 ; 
+}
