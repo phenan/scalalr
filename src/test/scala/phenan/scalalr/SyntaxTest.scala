@@ -19,11 +19,11 @@ class SyntaxTest extends FunSuite with Matchers {
   test("first") {
     val syntax = simpleSyntax
 
-    syntax.first(List(NonTerminal("S"))) shouldBe Set(IntLiteral)
-    syntax.first(List(NonTerminal("T"))) shouldBe Set(IntLiteral)
-    syntax.first(List(NonTerminal("T"), Keyword("mul"), NonTerminal("N"))) shouldBe Set(IntLiteral)
-    syntax.first(List(NonTerminal("M"))) shouldBe Set(IntLiteral)
-    syntax.first(List(Keyword("mul"), NonTerminal("N"))) shouldBe Set(Keyword("mul"))
+    syntax.lookupFirst(List(NonTerminal("S"))) shouldBe Set(IntLiteral)
+    syntax.lookupFirst(List(NonTerminal("T"))) shouldBe Set(IntLiteral)
+    syntax.lookupFirst(List(NonTerminal("T"), Keyword("mul"), NonTerminal("N"))) shouldBe Set(IntLiteral)
+    syntax.lookupFirst(List(NonTerminal("M"))) shouldBe Set(IntLiteral)
+    syntax.lookupFirst(List(Keyword("mul"), NonTerminal("N"))) shouldBe Set(Keyword("mul"))
   }
 
 

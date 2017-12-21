@@ -132,7 +132,7 @@ case class CodeGenerator (automaton: LALRAutomaton) {
       s"implicit def node${nodeIds(from)}_accept[NX]: Accept[Node${nodeIds(from)}[NX], ${symbolTypeNames(automaton.state(from))}] = Accept(s => s.value)"
   }
 
-  private def makeImplicitReduceString (from: LRNode, to: LRNode, term: Terminal, path: List[LRNode], nt: NonTerminal): String = {
+  private def makeImplicitReduceString (from: LRClosure, to: LRClosure, term: Terminal, path: List[LRClosure], nt: NonTerminal): String = {
     val baseType   = if (automaton.start == path.head) s"Node${nodeIds(path.head)}.type" else s"Node${nodeIds(path.head)}[NX]"
     val fromState  = path.tail.foldLeft(baseType) { (arg, node) => s"Node${nodeIds(node)}[$arg]" }
 
@@ -157,7 +157,7 @@ case class CodeGenerator (automaton: LALRAutomaton) {
     s"implicit def $methodName $typeInfo = Reduce(s => Node${nodeIds(to)}($baseState, $toState))"
   }
 
-  private lazy val reduceAndGoTo: Map[LRNode, Map[Terminal, Set[(Option[LRNode], List[LRNode], NonTerminal)]]] = automaton.reduce.map { case (from, map) =>
+  private lazy val reduceAndGoTo: Map[LRClosure, Map[Terminal, Set[(Option[LRClosure], List[LRClosure], NonTerminal)]]] = automaton.reduce.map { case (from, map) =>
     from -> map.map { case (term, (nt, expr)) =>
       val path = expr.foldRight(Set(List(from))) { (_, set) =>
         set.flatMap { lst => automaton.reverseEdges(lst.head).map(_ :: lst) }
@@ -202,7 +202,6 @@ case class CodeGenerator (automaton: LALRAutomaton) {
     case StringLiteral     => "id"
     case IntLiteral        => "int"
     case EndOfInput        => "eoi"
-    case EmptyString       => throw new Exception("empty string")
   }
 
   private lazy val traitNonTerminals: Set[NonTerminal] = automaton.syntax.rules.collect {
@@ -215,5 +214,5 @@ case class CodeGenerator (automaton: LALRAutomaton) {
 
   private lazy val edgesFromStart = automaton.edges(automaton.start)
 
-  private lazy val nodeIds: Map[LRNode, Int] = automaton.nodes.zipWithIndex.toMap
+  private lazy val nodeIds: Map[LRClosure, Int] = automaton.nodes.zipWithIndex.toMap
 }
