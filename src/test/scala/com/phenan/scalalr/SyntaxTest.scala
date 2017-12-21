@@ -1,4 +1,4 @@
-package phenan.scalalr
+package com.phenan.scalalr
 
 import org.scalatest._
 

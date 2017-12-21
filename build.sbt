@@ -1,10 +1,12 @@
+organization := "com.phenan"
+
 name := "scalalr"
 
-version := "1.0"
+version := "1.1"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.4"
 
-mainClass in (Compile, run) := Some("phenan.scalalr.Main")
+mainClass in (Compile, run) := Some("com.phenan.scalalr.Main")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),

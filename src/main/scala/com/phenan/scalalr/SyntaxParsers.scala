@@ -1,4 +1,4 @@
-package phenan.scalalr
+package com.phenan.scalalr
 
 import scala.util.parsing.combinator.JavaTokenParsers
 
