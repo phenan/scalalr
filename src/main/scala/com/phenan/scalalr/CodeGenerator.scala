@@ -15,10 +15,10 @@ case class CodeGenerator (automaton: LALRAutomaton) {
     separator ++ nonTerminalClassDefs ++
       separator ++ shiftReduceBaseClassDefs ++
       separator ++ nodeClassDefs ++
-      separator ++ commonTerminalTypeDefs ++ keywordObjectTypeDefs ++
-      separator ++ commonTerminalMethodDefs ++ keywordMethodDefs ++
+      separator ++ literalTokenTypeDefs ++ keywordObjectTypeDefs ++
+      separator ++ literalTokenMethodDefs ++ keywordMethodDefs ++
       separator ++ transitionImplicitDefs ++ transition_keywords ++
-      separator ++ commonTerminalImplicitDefs ++
+      separator ++ literalTokenImplicitDefs ++
       separator ++ shiftImplicitDefs ++ reduceImplicitDefs
   }
 
@@ -45,23 +45,19 @@ case class CodeGenerator (automaton: LALRAutomaton) {
   private def nodeClassDefs: List[String] = automaton.nodes.map { node =>
     if (automaton.start == node) s"case object Node${nodeIds(node)}"
     else automaton.state(node) match {
-      case NonTerminal(name) => s"case class Node${nodeIds(node)} [+NX] (prev: NX, value: ${name.capitalize})"
-      case IntLiteral        => s"case class Node${nodeIds(node)} [+NX] (prev: NX, value: Int)"
-      case StringLiteral     => s"case class Node${nodeIds(node)} [+NX] (prev: NX, value: String)"
-      case _                 => s"case class Node${nodeIds(node)} [+NX] (prev: NX)"
+      case nt: NonTerminal    => s"case class Node${nodeIds(node)} [+NX] (prev: NX, value: ${nt.typeName})"
+      case LiteralToken(_, t) => s"case class Node${nodeIds(node)} [+NX] (prev: NX, value: $t)"
+      case _                  => s"case class Node${nodeIds(node)} [+NX] (prev: NX)"
     }
   } (breakOut)
 
-  private def commonTerminalTypeDefs: List[String] = {
-    val intTypeDefs = edgesFromStart.get(IntLiteral) match {
-      case Some(node) => s"type IntNum = Node${nodeIds(node)}[Node${nodeIds(automaton.start)}.type]"
-      case None       => "case class IntNum (value: Int)"
-    }
-    val idTypeDefs = edgesFromStart.get(StringLiteral) match {
-      case Some(node) => s"type Id = Node${nodeIds(node)}[Node${nodeIds(automaton.start)}.type]"
-      case None       => "case class Id (value: String)"
-    }
-    List(intTypeDefs, idTypeDefs, "case object EoI")
+  private def literalTokenTypeDefs: List[String] = {
+    automaton.syntax.literals.toList.map { literal =>
+      edgesFromStart.get(literal) match {
+        case Some(node) => s"type ${symbolTypeNames(literal)} = Node${nodeIds(node)}[Node${nodeIds(automaton.start)}.type]"
+        case None       => s"case class ${symbolTypeNames(literal)} (value: ${literal.litType})"
+      }
+    } :+ "case object EoI"
   }
 
   private def keywordObjectTypeDefs: List[String] = automaton.syntax.terminals.collect { case k @ Keyword(kw) =>
@@ -71,11 +67,11 @@ case class CodeGenerator (automaton: LALRAutomaton) {
     }
   } (breakOut)
 
-  private def commonTerminalMethodDefs: List[String] = List (
-    s"def int (value: Int): IntNum = ${constructIntNum("value")}",
-    s"def id (value: String): Id = ${constructId("value")}",
-    "def $$ : EoI.type = EoI"
-  )
+  private def literalTokenMethodDefs: List[String] = {
+    automaton.syntax.literals.toList.map { literal =>
+      s"def ${literal.name} (value: ${literal.litType}): ${symbolTypeNames(literal)} = ${constructLiteral(literal, "value")}"
+    } :+ "def $$ : EoI.type = EoI"
+  }
 
   private def keywordMethodDefs: List[String] = automaton.syntax.terminals.collect {
     case Keyword(kw) => s"def $kw : ${kw.capitalize}.type = ${kw.capitalize}"
@@ -99,10 +95,9 @@ case class CodeGenerator (automaton: LALRAutomaton) {
       s"}"
   } (breakOut)
 
-  private def commonTerminalImplicitDefs: List[String] = List (
-    s"implicit class transition_num [N1, N2] (node: N1) (implicit transition: Transition[IntNum, N1, N2]) { def int (value: Int): N2 = transition.transit(node, ${constructIntNum("value")}) }",
-    s"implicit class transition_id [N1, N2] (node: N1) (implicit transition: Transition[Id, N1, N2]) { def id (value: String): N2 = transition.transit(node, ${constructId("value")}) }"
-  )
+  private def literalTokenImplicitDefs: List[String] = automaton.syntax.literals.toList.map { literal =>
+    s"implicit class transition_${literal.name} [N1, N2] (node: N1) (implicit transition: Transition[${symbolTypeNames(literal)}, N1, N2]) { def ${literal.name} (value: ${literal.litType}): N2 = transition.transit(node, ${constructLiteral(literal, "value")}) }"
+  }
 
   private def shiftImplicitDefs: Iterable[String] = for {
     (from, map) <- automaton.shift
@@ -114,9 +109,8 @@ case class CodeGenerator (automaton: LALRAutomaton) {
       else s"[NX] : Shift[${symbolTypeNames(term)}, Node${nodeIds(from)}[NX], Node${nodeIds(to)}[Node${nodeIds(from)}[NX]]]"
 
     val body = automaton.state(to) match {
-      case IntLiteral    => s"Shift((s, t) => Node${nodeIds(to)}(s, t.value))"
-      case StringLiteral => s"Shift((s, t) => Node${nodeIds(to)}(s, t.value))"
-      case _             => s"Shift((s, _) => Node${nodeIds(to)}(s))"
+      case LiteralToken(_, _) => s"Shift((s, t) => Node${nodeIds(to)}(s, t.value))"
+      case _                  => s"Shift((s, _) => Node${nodeIds(to)}(s))"
     }
 
     s"implicit def $methodName $typeInfo = $body"
@@ -147,10 +141,8 @@ case class CodeGenerator (automaton: LALRAutomaton) {
       if (traitNonTerminals.contains(nt)) "s.value"
       else symbolTypeNames(nt) + path.tail.foldRight[(String, List[String])] (("s", Nil)) { case (node, (cur, as)) =>
         automaton.state(node) match {
-          case NonTerminal(_) => (s"$cur.prev", s"$cur.value" :: as)
-          case IntLiteral     => (s"$cur.prev", s"$cur.value" :: as)
-          case StringLiteral  => (s"$cur.prev", s"$cur.value" :: as)
-          case _              => (s"$cur.prev", as)
+          case _: NonTerminal | _: LiteralToken => (s"$cur.prev", s"$cur.value" :: as)
+          case _                                => (s"$cur.prev", as)
         }
       }._2.mkString("(", ", ", ")")
 
@@ -172,36 +164,32 @@ case class CodeGenerator (automaton: LALRAutomaton) {
 
   private lazy val constructorArguments : Map[NonTerminal, List[(String, Int)]] = automaton.syntax.rules.collect {
     case DerivationRule(left, right) => left -> right.collect {
-      case NonTerminal(name) => name.capitalize
-      case StringLiteral     => "String"
-      case IntLiteral        => "Int"
+      case nt: NonTerminal    => nt.typeName
+      case LiteralToken(_, t) => t
     }.zipWithIndex
   } (breakOut)
 
-  private def constructIntNum (value: String): String = edgesFromStart.get(IntLiteral) match {
-    case Some(node) => s"Node${nodeIds(node)}(Node${nodeIds(automaton.start)}, $value)"
-    case None       => s"IntNum($value)"
-  }
-
-  private def constructId (value: String): String = edgesFromStart.get(StringLiteral) match {
-    case Some(node) => s"Node${nodeIds(node)}(Node${nodeIds(automaton.start)}, $value)"
-    case None       => s"Id($value)"
+  private def constructLiteral (literal: LiteralToken, arg: String): String = edgesFromStart.get(literal) match {
+    case Some(node) => s"Node${nodeIds(node)}(Node${nodeIds(automaton.start)}, $arg)"
+    case None       => s"${symbolTypeNames(literal)}($arg)"
   }
 
   private def symbolTypeNames (symbol: Symbol): String = symbol match {
-    case NonTerminal(name) => name.capitalize
-    case Keyword(kw)       => kw.capitalize + ".type"
-    case StringLiteral     => "Id"
-    case IntLiteral        => "IntNum"
-    case EndOfInput        => "EoI.type"
-    case EmptyString       => throw new Exception("empty string")
+    /* 一旦保留
+    case lit: LiteralToken if edgesFromStart.contains(lit) =>
+      s"Node${nodeIds(edgesFromStart(lit))}[Node${nodeIds(automaton.start)}.type]"*/
+
+    case nt: NonTerminal    => nt.typeName
+    case Keyword(kw)        => kw.capitalize + ".type"
+    case LiteralToken(_, t) => "ScaLALR$Literal$Token$" + t
+    case EndOfInput         => "EoI.type"
+    case EmptyString        => throw new Exception("empty string")
   }
 
   private def terminalNames (terminal: Terminal): String = terminal match {
-    case Keyword(kw)       => kw
-    case StringLiteral     => "id"
-    case IntLiteral        => "int"
-    case EndOfInput        => "eoi"
+    case Keyword(kw)        => kw
+    case LiteralToken(n, _) => n
+    case EndOfInput         => "eoi"
   }
 
   private lazy val traitNonTerminals: Set[NonTerminal] = automaton.syntax.rules.collect {

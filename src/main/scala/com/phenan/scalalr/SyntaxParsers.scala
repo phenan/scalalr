@@ -6,8 +6,8 @@ import scala.util.parsing.combinator.JavaTokenParsers
   * Created by @phenan on 2016/12/15.
   */
 object SyntaxParsers extends JavaTokenParsers {
-  def syntax: Parser[Syntax] = "syntax" ~> ident ~ ( "(" ~> nonTerminal <~ ")" ) ~ ( "{" ~> rule.* <~ "}" ) ^^ {
-    case name ~ start ~ rules => Syntax(name, NonTerminal("#Start#"), DerivationRule(NonTerminal("#Start#"), List(start)) :: rules)
+  def syntax: Parser[SyntaxRule] = "syntax" ~> ident ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
+    case name ~ start ~ rules => SyntaxRule(name, NonTerminal("#Start#"), DerivationRule(NonTerminal("#Start#"), List(start)) :: rules)
   }
 
   def rule: Parser[Rule] = branch | derivation
@@ -20,13 +20,13 @@ object SyntaxParsers extends JavaTokenParsers {
     case left ~ right => DerivationRule(left, right)
   }
 
-  def nonTerminal: Parser[NonTerminal] = not(id | int) ~> ident ^^ NonTerminal
+  def nonTerminal: Parser[NonTerminal] = not(id | int) ~> ident ^^ { id => NonTerminal(id.capitalize) }
 
   def terminal: Parser[Terminal] = id | int | keyword
 
-  def id: Parser[StringLiteral.type] = "id" ^^^ StringLiteral
+  def id: Parser[LiteralToken] = "id" ^^^ LiteralToken("id", "String")
 
-  def int: Parser[IntLiteral.type] = "int" ^^^ IntLiteral
+  def int: Parser[LiteralToken] = "int" ^^^ LiteralToken("int", "Int")
 
   def keyword: Parser[Keyword] = "\"" ~> ident <~ "\"" ^^ Keyword
 }

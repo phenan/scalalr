@@ -5,7 +5,7 @@ import collection.breakOut
 /**
   * Created by @phenan on 2016/12/12.
   */
-case class Syntax (name: String, start: NonTerminal, rules: List[Rule]) {
+case class SyntaxRule (name: String, start: NonTerminal, rules: List[Rule]) {
 
   /**
     * 文法一覧
@@ -29,6 +29,13 @@ case class Syntax (name: String, start: NonTerminal, rules: List[Rule]) {
     case BranchRule(_, _)         => Nil
     case DerivationRule(_, right) => right.collect { case t: Terminal => t }
   } (breakOut)
+
+  /**
+    * 全てのリテラル
+    */
+  lazy val literals: Set[LiteralToken] = terminals.collect {
+    case l: LiteralToken => l
+  }
 
   /**
     * 与えられた文法式の先読み集合を求める関数
@@ -131,7 +138,17 @@ case class DerivationRule (left: NonTerminal, right: List[Symbol]) extends Rule
 
 sealed trait Symbol
 
-case class NonTerminal (name: String) extends Symbol
+trait NonTerminal extends Symbol {
+  def typeName: String
+}
+
+object NonTerminal {
+  def apply (name: String): NonTerminal = NonTerminalString(name)
+
+  case class NonTerminalString (name: String) extends NonTerminal {
+    override def typeName: String = name
+  }
+}
 
 case object EmptyString extends Symbol
 
@@ -139,9 +156,11 @@ sealed trait Terminal extends Symbol
 
 case class Keyword (kw: String) extends Terminal
 
-case object StringLiteral extends Terminal
+case class LiteralToken (name: String, litType: String) extends Terminal
 
-case object IntLiteral extends Terminal
+//case object StringLiteral extends Terminal
+
+//case object IntLiteral extends Terminal
 
 case object EndOfInput extends Terminal
 
