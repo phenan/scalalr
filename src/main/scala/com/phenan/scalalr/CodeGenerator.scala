@@ -69,7 +69,7 @@ case class CodeGenerator (automaton: LALRAutomaton) {
 
   private def literalTokenMethodDefs: List[String] = {
     automaton.syntax.literals.toList.map { literal =>
-      s"def ${literal.name} (value: ${literal.litType}): ${symbolTypeNames(literal)} = ${constructLiteral(literal, "value")}"
+      s"def ${literal.identifier} (value: ${literal.litType}): ${symbolTypeNames(literal)} = ${constructLiteral(literal, "value")}"
     } :+ "def $$ : EoI.type = EoI"
   }
 
@@ -96,7 +96,7 @@ case class CodeGenerator (automaton: LALRAutomaton) {
   } (breakOut)
 
   private def literalTokenImplicitDefs: List[String] = automaton.syntax.literals.toList.map { literal =>
-    s"implicit class transition_${literal.name} [N1, N2] (node: N1) (implicit transition: Transition[${symbolTypeNames(literal)}, N1, N2]) { def ${literal.name} (value: ${literal.litType}): N2 = transition.transit(node, ${constructLiteral(literal, "value")}) }"
+    s"implicit class transition_${literal.identifier} [N1, N2] (node: N1) (implicit transition: Transition[${symbolTypeNames(literal)}, N1, N2]) { def ${literal.identifier} (value: ${literal.litType}): N2 = transition.transit(node, ${constructLiteral(literal, "value")}) }"
   }
 
   private def shiftImplicitDefs: Iterable[String] = for {

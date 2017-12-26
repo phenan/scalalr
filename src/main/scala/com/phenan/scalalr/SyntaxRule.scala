@@ -156,11 +156,7 @@ sealed trait Terminal extends Symbol
 
 case class Keyword (kw: String) extends Terminal
 
-case class LiteralToken (name: String, litType: String) extends Terminal
-
-//case object StringLiteral extends Terminal
-
-//case object IntLiteral extends Terminal
+case class LiteralToken (identifier: String, litType: String) extends Terminal
 
 case object EndOfInput extends Terminal
 

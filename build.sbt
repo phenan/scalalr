@@ -16,8 +16,11 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "org.scalactic" %% "scalactic" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+  "org.scala-lang" % "scala-reflect" % "2.12.4",
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4"
 )
+
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 
 scalacOptions ++= Seq(
   "-deprecation",
