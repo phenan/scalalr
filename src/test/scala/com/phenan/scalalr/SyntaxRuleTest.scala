@@ -7,31 +7,33 @@ import org.scalatest._
   */
 class SyntaxRuleTest extends FunSuite with Matchers {
 
+  import CommandLineApplication._
+
   test("expression") {
     val syntax = simpleSyntax
 
-    syntax.expressions(NonTerminal("S")) shouldBe List(List(NonTerminal("T")))
-    syntax.expressions(NonTerminal("T")) shouldBe List(List(NonTerminal("M")), List(NonTerminal("N")))
-    syntax.expressions(NonTerminal("M")) shouldBe List(List(NonTerminal("T"), Keyword("mul"), NonTerminal("N")))
-    syntax.expressions(NonTerminal("N")) shouldBe List(List(LiteralToken("int", "Int")))
+    syntax.expressions(NonTerminalImpl("S")) shouldBe List(List(nonTerminalSymbol("T")))
+    syntax.expressions(NonTerminalImpl("T")) shouldBe List(List(nonTerminalSymbol("M")), List(nonTerminalSymbol("N")))
+    syntax.expressions(NonTerminalImpl("M")) shouldBe List(List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N")))
+    syntax.expressions(NonTerminalImpl("N")) shouldBe List(List(literalTokenSymbol("int", "Int")))
   }
 
   test("first") {
     val syntax = simpleSyntax
 
-    syntax.lookupFirst(List(NonTerminal("S"))) shouldBe Set(LiteralToken("int", "Int"))
-    syntax.lookupFirst(List(NonTerminal("T"))) shouldBe Set(LiteralToken("int", "Int"))
-    syntax.lookupFirst(List(NonTerminal("T"), Keyword("mul"), NonTerminal("N"))) shouldBe Set(LiteralToken("int", "Int"))
-    syntax.lookupFirst(List(NonTerminal("M"))) shouldBe Set(LiteralToken("int", "Int"))
-    syntax.lookupFirst(List(Keyword("mul"), NonTerminal("N"))) shouldBe Set(Keyword("mul"))
+    syntax.lookupFirst(List(nonTerminalSymbol("S"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("T"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("M"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
+    syntax.lookupFirst(List(keywordSymbol("mul"), nonTerminalSymbol("N"))) shouldBe Set(Terminal(Keyword("mul")))
   }
 
 
-  def simpleSyntax = SyntaxRule("Simple", NonTerminal("S"), List(
-    DerivationRule(NonTerminal("S"), List(NonTerminal("T"))),
-    BranchRule(NonTerminal("T"), List(NonTerminal("M"), NonTerminal("N"))),
-    DerivationRule(NonTerminal("M"), List(NonTerminal("T"), Keyword("mul"), NonTerminal("N"))),
-    DerivationRule(NonTerminal("N"), List(LiteralToken("int", "Int")))
+  def simpleSyntax = SyntaxRule("Simple", NonTerminalImpl("S"), List(
+    DerivationRule(NonTerminalImpl("S"), List(nonTerminalSymbol("T"))),
+    BranchRule(NonTerminalImpl("T"), List(NonTerminalImpl("M"), NonTerminalImpl("N"))),
+    DerivationRule(NonTerminalImpl("M"), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))),
+    DerivationRule(NonTerminalImpl("N"), List(literalTokenSymbol("int", "Int")))
   ))
 }
 

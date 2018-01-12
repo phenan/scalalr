@@ -6,36 +6,38 @@ import org.scalatest._
   * Created by @phenan on 2016/12/12.
   */
 class LALRAutomatonTest extends FunSuite with Matchers {
+  import CommandLineApplication._
+
   test ("LALR automaton") {
     val automaton = LALRAutomaton(simpleSyntax)
 
     val node0 = LRClosure(Map(
-      LRItem(NonTerminal("S"), List(NonTerminal("T")), List(NonTerminal("T"))) -> Set(EndOfInput),
-      LRItem(NonTerminal("T"), List(NonTerminal("M")), List(NonTerminal("M"))) -> Set(EndOfInput, Keyword("mul")),
-      LRItem(NonTerminal("T"), List(NonTerminal("N")), List(NonTerminal("N"))) -> Set(EndOfInput, Keyword("mul")),
-      LRItem(NonTerminal("M"), List(NonTerminal("T"), Keyword("mul"), NonTerminal("N")), List(NonTerminal("T"), Keyword("mul"), NonTerminal("N"))) -> Set(EndOfInput, Keyword("mul")),
-      LRItem(NonTerminal("N"), List(LiteralToken("int", "Int")), List(LiteralToken("int", "Int"))) -> Set(EndOfInput, Keyword("mul"))
+      LRItem(NonTerminalImpl("S"), List(nonTerminalSymbol("T")), List(nonTerminalSymbol("T"))) -> Set(Terminal.eoi),
+      LRItem(NonTerminalImpl("T"), List(nonTerminalSymbol("M")), List(nonTerminalSymbol("M"))) -> Set(Terminal.eoi, Terminal(Keyword("mul"))),
+      LRItem(NonTerminalImpl("T"), List(nonTerminalSymbol("N")), List(nonTerminalSymbol("N"))) -> Set(Terminal.eoi, Terminal(Keyword("mul"))),
+      LRItem(NonTerminalImpl("M"), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N")), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))) -> Set(Terminal.eoi, Terminal(Keyword("mul"))),
+      LRItem(NonTerminalImpl("N"), List(literalTokenSymbol("int", "Int")), List(literalTokenSymbol("int", "Int"))) -> Set(Terminal.eoi, Terminal(Keyword("mul")))
     ))
 
     val node1 = LRClosure(Map(
-      LRItem(NonTerminal("S"), List(NonTerminal("T")), Nil) -> Set(EndOfInput),
-      LRItem(NonTerminal("M"), List(NonTerminal("T"), Keyword("mul"), NonTerminal("N")), List(Keyword("mul"), NonTerminal("N"))) -> Set(EndOfInput, Keyword("mul"))))
+      LRItem(NonTerminalImpl("S"), List(nonTerminalSymbol("T")), Nil) -> Set(Terminal.eoi),
+      LRItem(NonTerminalImpl("M"), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N")), List(keywordSymbol("mul"), nonTerminalSymbol("N"))) -> Set(Terminal.eoi, Terminal(Keyword("mul")))))
 
     val node2 = LRClosure(Map(
-      LRItem(NonTerminal("M"), List(NonTerminal("T"), Keyword("mul"), NonTerminal("N")), List(NonTerminal("N"))) -> Set(EndOfInput, Keyword("mul")),
-      LRItem(NonTerminal("N"), List(LiteralToken("int", "Int")), List(LiteralToken("int", "Int"))) -> Set(EndOfInput, Keyword("mul"))))
+      LRItem(NonTerminalImpl("M"), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N")), List(nonTerminalSymbol("N"))) -> Set(Terminal.eoi, Terminal(Keyword("mul"))),
+      LRItem(NonTerminalImpl("N"), List(literalTokenSymbol("int", "Int")), List(literalTokenSymbol("int", "Int"))) -> Set(Terminal.eoi, Terminal(Keyword("mul")))))
 
 
     automaton.start shouldBe node0
-    automaton.edges(node0)(NonTerminal("T")) shouldBe node1
-    automaton.edges(node1)(Keyword("mul")) shouldBe node2
+    automaton.edges(node0)(nonTerminalSymbol("T")) shouldBe node1
+    automaton.edges(node1)(keywordSymbol("mul")) shouldBe node2
   }
 
-  def simpleSyntax = SyntaxRule("Simple", NonTerminal("S"), List(
-    DerivationRule(NonTerminal("S"), List(NonTerminal("T"))),
-    BranchRule(NonTerminal("T"), List(NonTerminal("M"), NonTerminal("N"))),
-    DerivationRule(NonTerminal("M"), List(NonTerminal("T"), Keyword("mul"), NonTerminal("N"))),
-    DerivationRule(NonTerminal("N"), List(LiteralToken("int", "Int")))
+  def simpleSyntax = SyntaxRule("Simple", NonTerminalImpl("S"), List(
+    DerivationRule(NonTerminalImpl("S"), List(nonTerminalSymbol("T"))),
+    BranchRule(NonTerminalImpl("T"), List(NonTerminalImpl("M"), NonTerminalImpl("N"))),
+    DerivationRule(NonTerminalImpl("M"), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))),
+    DerivationRule(NonTerminalImpl("N"), List(literalTokenSymbol("int", "Int")))
   ))
 }
 
