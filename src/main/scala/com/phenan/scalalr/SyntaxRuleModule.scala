@@ -30,7 +30,41 @@ trait SyntaxRuleModule {
 
   type LiteralToken
 
-  case class Keyword (kw: String)
+  case class Keyword (kw: String) {
+    lazy val scalaIdent: String = kw.flatMap {
+      case '!'  => "$$exclam"
+      case '\"' => "$$quotedbl"
+      case '#'  => "$$numbersign"
+      case '%'  => "$$percent"
+      case '&'  => "$$ampersand"
+      case '\'' => "$$quotesingle"
+      case '('  => "$$parenleft"
+      case ')'  => "$$parenright"
+      case '*'  => "$$asterisk"
+      case '+'  => "$$plus"
+      case ','  => "$$comma"
+      case '-'  => "$$hyphen"
+      case '.'  => "$$period"
+      case '/'  => "$$slash"
+      case ':'  => "$$colon"
+      case ';'  => "$$semicolon"
+      case '<'  => "$$less"
+      case '='  => "$$equal"
+      case '>'  => "$$greater"
+      case '?'  => "$$question"
+      case '@'  => "$$at"
+      case '['  => "$$bracketleft"
+      case '\\' => "$$backslash"
+      case ']'  => "$$bracketright"
+      case '^'  => "$$asciicircum"
+      case '`'  => "$$grave"
+      case '{'  => "$$braceleft"
+      case '|'  => "$$bar"
+      case '}'  => "$$braceright"
+      case '~'  => "$$asciitilde"
+      case c    => c.toString
+    }
+  }
 
   case object EndOfInput
 
@@ -61,11 +95,16 @@ trait SyntaxRuleModule {
 
   /**
     * 文法を表現するデータ
-    * @param name 言語名
+    * @param qualifiedName 言語の完全修飾名
     * @param start 開始記号
     * @param rules 全ての文法規則
     */
-  case class SyntaxRule (name: String, start: NonTerminal, rules: List[Rule]) {
+  case class SyntaxRule (qualifiedName: List[String], start: NonTerminal, rules: List[Rule]) {
+
+    /**
+      * 言語の短縮名称
+      */
+    lazy val name: String = qualifiedName.last
 
     /**
       * 文法規則一覧

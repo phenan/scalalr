@@ -9,7 +9,7 @@ object Test {
   @syntax(g"foo $n with $m")
   case class Foo (n: Int, m: Bar) extends Hoge
 
-  @syntax(g"bar $s bar bar ")
+  @syntax(g"bar $s bar bar")
   case class Bar (s: List[String]) extends Hoge
 
   @syntax(g"baz")

@@ -29,7 +29,7 @@ class SyntaxRuleTest extends FunSuite with Matchers {
   }
 
 
-  def simpleSyntax = SyntaxRule("Simple", NonTerminalImpl("S"), List(
+  def simpleSyntax = SyntaxRule(List("Simple"), NonTerminalImpl("S"), List(
     DerivationRule(NonTerminalImpl("S"), List(nonTerminalSymbol("T"))),
     BranchRule(NonTerminalImpl("T"), List(NonTerminalImpl("M"), NonTerminalImpl("N"))),
     DerivationRule(NonTerminalImpl("M"), List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))),

@@ -1,5 +1,7 @@
 package com.phenan.scalalr
 
+import java.io._
+
 import scala.util.parsing.combinator.JavaTokenParsers
 import shapeless._
 import shapeless.ops.coproduct.Inject
@@ -23,7 +25,18 @@ trait CommandLineApplicationModule {
   def literalTokenSymbol (identifier: String, litType: String): Symbol = Symbol(Terminal(LiteralTokenImpl(identifier, litType)))
 
   object SyntaxParsers extends JavaTokenParsers {
-    def syntax: Parser[SyntaxRule] = "syntax" ~> ident ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
+
+    def runParser (file: File): Either[String, SyntaxRule] = {
+      val reader = new BufferedReader(new FileReader(file))
+      val parseResult = parseAll(syntax, reader)
+      reader.close()
+      parseResult match {
+        case Success(r, _)   => Right(r)
+        case NoSuccess(m, _) => Left(m)
+      }
+    }
+
+    def syntax: Parser[SyntaxRule] = "syntax" ~> rep1sep(ident, ".") ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
       case name ~ start ~ rules => SyntaxRule(name, start, rules)
     }
 
@@ -45,7 +58,7 @@ trait CommandLineApplicationModule {
 
     def int: Parser[LiteralToken] = "int" ^^^ LiteralTokenImpl("int", "Int")
 
-    def keyword: Parser[Keyword] = "\"" ~> ident <~ "\"" ^^ Keyword
+    def keyword: Parser[Keyword] = stringLiteral ^^ { lit => Keyword(lit.substring(1, lit.length - 1)) }
 
     private def choice[R <: Coproduct]: Choice[R] = new Choice[R]
 
@@ -68,9 +81,11 @@ trait CommandLineApplicationModule {
 
     type OutputBuilder = OutputState => String
 
-    type Type = OutputBuilder
     type MemberDef = OutputBuilder
-    type Parameter = OutputBuilder
+
+    type Type = String
+    type Parameter = String
+    type TypeParameter = String
     type Expr = OutputBuilder
 
     Random.setSeed(System.currentTimeMillis())
@@ -81,21 +96,23 @@ trait CommandLineApplicationModule {
 
     def literalIdentifier (lit: LiteralToken): String = lit.identifier
 
-    def simpleType (typeName: String): Type = _ => typeName
-    def objectType (objectName: String): Type = _ => objectName + ".type"
-    def nonTerminalType (nt: NonTerminal): Type = _ => nt.name
-    def literalType (lit: LiteralToken): Type = _ => lit.litType
+    def simpleType (typeName: String): Type = typeName
+    def objectType (objectName: String): Type = objectName + ".type"
+    def nonTerminalType (nt: NonTerminal): Type = nt.name
+    def literalType (lit: LiteralToken): Type = lit.litType
 
-    def tuple2Type (v1: Type, v2: Type): Type = s => s"(${v1(s)}, ${v2(s)})"
-    def functionType (left: Type, right: Type): Type = s => s"${left(s)} => ${right(s)}"
-    def parameterizedType (genName: String, args: List[Type]): Type = s => s"$genName${typeArguments(args)(s)}"
+    def tuple2Type (v1: Type, v2: Type): Type = s"($v1, $v2)"
+    def functionType (left: Type, right: Type): Type = s"$left => $right"
+    def parameterizedType (genName: String, args: List[Type]): Type = s"$genName${typeArguments(args)}"
 
-    def parameter (name: String, paramType: Type): Parameter = s => s"$name: ${paramType(s)}"
-    def unusedParameter (paramType: Type): Parameter = s => s"_ : ${paramType(s)}"
+    def parameter (name: String, paramType: Type): Parameter = s"$name: $paramType"
+    def unusedParameter (paramType: Type): Parameter = s"_ : $paramType"
+
+    def typeParameter (name: String): TypeParameter = name
+    def typeParameter (name: String, bound: Type): TypeParameter = s"$name <: $bound"
 
     def moduleDefinition (moduleName: String, members: List[MemberDef]): MemberDef = s => {
-      s"import scala.language.implicitConversions${s.newLine}${s.newLine}" +
-      s"object $moduleName {${members.map(_(s.indent)).mkString}${s.newLine}}"
+      s"${s.newLine}object $moduleName {${members.map(_(s.indent)).mkString}${s.newLine}}"
     }
 
     def branchDataTypeDef (nt: NonTerminal, superType: Option[NonTerminal]): MemberDef = s => superType match {
@@ -104,57 +121,57 @@ trait CommandLineApplicationModule {
     }
 
     def derivationDateTypeDef (nt: NonTerminal, params: List[Parameter], superType: Option[NonTerminal]): MemberDef = s => superType match {
-      case Some(sup) => s"${s.newLine}case class ${nt.name}${parameters(params)(s)} extends ${sup.name}"
-      case None      => s"${s.newLine}case class ${nt.name}${parameters(params)(s)}"
+      case Some(sup) => s"${s.newLine}case class ${nt.name}${parameters(params)} extends ${sup.name}"
+      case None      => s"${s.newLine}case class ${nt.name}${parameters(params)}"
     }
 
-    def caseClassDef (name: String, typeParams: List[String], params: List[Parameter]): MemberDef = s => {
-      s"${s.newLine}case class $name ${typeParameters(typeParams)(s)} ${parameters(params)(s)}"
+    def caseClassDef (name: String, typeParams: List[TypeParameter], params: List[Parameter]): MemberDef = s => {
+      s"${s.newLine}case class $name ${typeParameters(typeParams)} ${parameters(params)}"
     }
 
     def caseObjectDef (name: String): MemberDef = s => s"${s.newLine}case object $name"
 
-    def lazyValDef (name: String, valType: Type, value: Expr): MemberDef = s => s"${s.newLine}lazy val $name : ${valType(s)} = ${value(s)}"
+    def lazyValDef (name: String, valType: Type, value: Expr): MemberDef = s => s"${s.newLine}lazy val $name : $valType = ${value(s)}"
 
     def functionDef (name: String, typeParams: List[String], params: List[Parameter], implicitParams: List[Parameter], returnType: Type, body: Expr): MemberDef = s => {
-      s"${s.newLine}def $name${typeParameters(typeParams)(s)}${parameters(params)(s)}${implicitParameters(implicitParams)(s)} : ${returnType(s)} = ${body(s)}"
+      s"${s.newLine}def $name ${typeParameters(typeParams)}${parameters(params)}${implicitParameters(implicitParams)}: $returnType = ${body(s)}"
     }
 
     def implicitFunctionDef (typeParams: List[String], params: List[Parameter], implicitParams: List[Parameter], returnType: Type, body: Expr): MemberDef = s => {
-      s"${s.newLine}implicit def $generateUniqueName${typeParameters(typeParams)(s)}${parameters(params)(s)}${implicitParameters(implicitParams)(s)} : ${returnType(s)} = ${body(s)}"
+      s"${s.newLine}implicit def $generateUniqueName ${typeParameters(typeParams)}${parameters(params)}${implicitParameters(implicitParams)}: $returnType = ${body(s)}"
     }
 
     def implicitClassDef (typeParams: List[String], param: Parameter, implicitParams: List[Parameter], members: List[MemberDef]): MemberDef = s => {
-      s"${s.newLine}implicit class $generateUniqueName${typeParameters(typeParams)(s)}(${param(s)})${implicitParameters(implicitParams)(s)} {${members.map(_(s.indent)).mkString}${s.newLine}}"
+      s"${s.newLine}implicit class $generateUniqueName ${typeParameters(typeParams)}($param)${implicitParameters(implicitParams)} {${members.map(_(s.indent)).mkString}${s.newLine}}"
     }
 
     def objectRef (objectName: String): Expr = _ => objectName
-    def methodCall (receiver: Expr, methodName: String, typeArgs: List[Type], args: List[Expr]): Expr = s => s"${receiver(s)}.$methodName${typeArguments(typeArgs)(s)}${arguments(args)(s)}"
+    def methodCall (receiver: Expr, methodName: String, typeArgs: List[Type], args: List[Expr]): Expr = s => s"${receiver(s)}.$methodName${typeArguments(typeArgs)}${arguments(args)(s)}"
     def fieldRef (receiver: Expr, fieldName: String): Expr = s => s"${receiver(s)}.$fieldName"
-    def callApply (receiver: Expr, typeArgs: List[Type], args: List[Expr]): Expr = s => s"${receiver(s)}${typeArguments(typeArgs)(s)}${arguments(args)(s)}"
-    def lambda (params: List[Parameter], body: Expr): Expr = s => s"{ ${parameters(params)(s)} => ${body(s)} }"
+    def callApply (receiver: Expr, typeArgs: List[Type], args: List[Expr]): Expr = s => s"${receiver(s)}${typeArguments(typeArgs)}${arguments(args)(s)}"
+    def lambda (params: List[Parameter], body: Expr): Expr = s => s"{ ${parameters(params)} => ${body(s)} }"
 
     def constructAST (nonTerminal: NonTerminal, args: List[Expr]): Expr = s => {
       s"${nonTerminal.name}${arguments(args)(s)}"
     }
 
-    private def typeParameters (typeParams: List[String]): OutputBuilder = _ => {
+    private def typeParameters (typeParams: List[TypeParameter]): String = {
       if (typeParams.nonEmpty) typeParams.mkString("[", ", ", "]")
       else ""
     }
 
-    private def typeArguments (typeArgs: List[Type]): OutputBuilder = s => {
-      if (typeArgs.nonEmpty) typeArgs.map(_(s)).mkString("[", ", ", "]")
+    private def typeArguments (typeArgs: List[Type]): String = {
+      if (typeArgs.nonEmpty) typeArgs.mkString("[", ", ", "]")
       else ""
     }
 
-    private def parameters (params: List[Parameter]): OutputBuilder = s => {
-      if (params.nonEmpty) params.map(_(s)).mkString("(", ", ", ")")
+    private def parameters (params: List[Parameter]): String = {
+      if (params.nonEmpty) params.mkString("(", ", ", ")")
       else ""
     }
 
-    private def implicitParameters (params: List[Parameter]): OutputBuilder = s => {
-      if (params.nonEmpty) params.map(_(s)).mkString("(implicit ", ", ", ")")
+    private def implicitParameters (params: List[Parameter]): String = {
+      if (params.nonEmpty) params.mkString("(implicit ", ", ", ")")
       else ""
     }
 

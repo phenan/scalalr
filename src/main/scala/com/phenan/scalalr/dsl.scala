@@ -44,7 +44,7 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
     * @return マクロ変換後のボディ
     */
   private def translateDeclarationBody (declarationName: String, declarationBody: List[Tree]): List[Tree] = {
-    val startRule = getStartRule(declarationBody)
+    /*val startRule = getStartRule(declarationBody)
     val derivationRules = collectDerivationRules(declarationBody)
     val branchRules = collectBranchRules(declarationBody)
 
@@ -52,7 +52,7 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
 
     val automaton = LALRAutomaton(syntax)
 
-    println(automaton)
+    println(automaton)*/
 
     declarationBody.map {
       case ClassDef(mod, name, typeParams, template) => ClassDef(removeSyntaxAnnotation(mod), name, typeParams, template)
@@ -60,7 +60,7 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
       case other => other
     }
   }
-
+/*
   /**
     * 開始記号を発見する関数
     * start アノテーションのついたもの
@@ -83,7 +83,7 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
   }
 
   private def collectLiteralTokens (declarationBody: List[Tree]): List[LiteralToken] = declarationBody.collect {
-    case DefDef(mod, name, Nil, List(List(ValDef(Modifiers(PARAM), _, typeName, EmptyTree))), returnType, _) if mod.annotations.exists(TokenAnnotationTree.unapply) =>
+    case DefDef(mod, name, Nil, List(List(ValDef(Modifiers(PARAM, _, _), _, typeName, EmptyTree))), returnType, _) if mod.annotations.exists(TokenAnnotationTree.unapply) =>
       ???
   }
 
@@ -154,18 +154,18 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
   private def getSyntaxAnnotation (mod: Modifiers): Option[SyntaxAnnotation] = mod.annotations.collectFirst {
     case SyntaxAnnotationTree(annotation) => annotation
   }
-
+*/
   private def removeSyntaxAnnotation (mod: Modifiers): Modifiers = {
     Modifiers(mod.flags, mod.privateWithin, mod.annotations.filter(SyntaxAnnotationTree.unapply(_).isEmpty))
   }
 
   private case class SyntaxAnnotation (operatorTrees: List[Tree], operandTrees: List[Tree], pos: Position) {
-    def operators: List[List[Keyword]] = operatorTrees.map {
+    /*def operators: List[List[Keyword]] = operatorTrees.map {
       case Literal(Constant("")) => Nil
       case Literal(Constant(str: String)) => str.split(" ").filter(_ != "").map(Keyword).toList
       case other => c.abort(other.pos, s"""@syntax only supports g"..." for describing syntax: $other""")
     }
-
+*/
   }
 
   private object SyntaxAnnotationTree {

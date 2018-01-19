@@ -1,15 +1,15 @@
 
-syntax MathDSL (program) {
+syntax com.phenan.arith.MathDSL (program) {
   program = stmts | stmt    ;
   stmts = stmt program      ;
   stmt = expr "end"         ;
   expr = add | sub | term   ;
-  add = expr "plus" term    ;
-  sub = expr "minus" term   ;
+  add = expr "+" term       ;
+  sub = expr "-" term       ;
   term = mul | div | factor ;
-  mul = term "mul" factor   ; 
-  div = term "div" factor   ; 
+  mul = term "*" factor     ;
+  div = term "/" factor     ;
   factor = paren | num      ; 
-  paren = "lp" expr "rp"    ; 
+  paren = "(" expr ")"      ;
   num = int                 ; 
 }

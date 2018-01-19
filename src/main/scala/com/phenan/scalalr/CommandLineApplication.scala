@@ -12,50 +12,60 @@ object CommandLineApplication extends CommandLineApplicationModule with SyntaxRu
   }
 
   def run (config: Config): Unit = {
-    val reader = new BufferedReader(new FileReader(config.syntaxFile))
-    val parseResult = SyntaxParsers.parseAll(SyntaxParsers.syntax, reader)
-    reader.close()
-
-    parseResult match {
-      case SyntaxParsers.Success(syntax, _) =>
-        val gen = CodeGenerator(LALRAutomaton(syntax))
-        val out = config.dslOutputFile.getOrElse(new File(syntax.name + ".scala"))
-
-        if (config.printFlag) {
-          println("/***********************/")
-          println(gen.generatedCodeOfASTDataTypeDefinitions)
-          println("\n/***********************/\n")
-          println(gen.generatedCodeWithoutDataDefinitions)
-        }
-        else config.astOutputFile match {
-          case Some(a) =>
-            val writer1 = new BufferedWriter(new FileWriter(a))
-            writer1.write(gen.generatedCodeOfASTDataTypeDefinitions)
-            writer1.close()
-
-            val writer2 = new BufferedWriter(new FileWriter(out))
-            writer2.write(gen.generatedCodeWithoutDataDefinitions)
-            writer2.close()
-          case None    =>
-            val writer = new BufferedWriter(new FileWriter(out))
-            writer.write(gen.generatedCodeWithDataDefinitions)
-            writer.close()
-        }
-
-      case SyntaxParsers.NoSuccess(msg, _)  =>
+    SyntaxParsers.runParser(config.syntaxFile) match {
+      case Right(syntax) =>
+        if (config.printFlag) printGeneratedCode(syntax)
+        else writeGeneratedCode(syntax, config.directory)
+      case Left(msg) =>
         Stdio.err.println(s"invalid syntax file : ${config.syntaxFile}\n  $msg")
     }
   }
 
-  case class Config (astOutputFile: Option[File] = None, dslOutputFile: Option[File] = None, printFlag: Boolean = false, syntaxFile: File = null)
+  def printGeneratedCode (syntax: SyntaxRule): Unit = {
+    val gen = CodeGenerator(LALRAutomaton(syntax))
+    println("/***********************/")
+    println(gen.generateCode(gen.astDataTypeDefinitions))
+    println("\n/***********************/\n")
+    println(gen.generateCode(gen.program))
+  }
+
+  def writeGeneratedCode (syntax: SyntaxRule, directory: Option[File]): Unit = {
+    val dir = directory.getOrElse(new File("."))
+    val dslFile = new File(dir, syntax.qualifiedName.mkString("/") + ".scala")
+    val parent = dslFile.getParentFile
+    val astFile = new File(parent, "ASTs.scala")
+    parent.mkdirs()
+
+    val gen = CodeGenerator(LALRAutomaton(syntax))
+    val writer1 = new BufferedWriter(new FileWriter(astFile))
+    if (syntax.qualifiedName.init.nonEmpty) {
+      writer1.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
+      writer1.newLine()
+    }
+    writer1.write(gen.generateCode(gen.astDataTypeDefinitions))
+    writer1.close()
+
+    val writer2 = new BufferedWriter(new FileWriter(dslFile))
+    if (syntax.qualifiedName.init.nonEmpty) {
+      writer2.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
+      writer2.newLine()
+      writer2.newLine()
+      writer2.write("import com.phenan.scalalr._")
+      writer2.newLine()
+    }
+    writer2.write(gen.generateCode(gen.program))
+    writer2.close()
+  }
+
+  case class Config
+  (directory         : Option[File] = None,
+   printFlag         : Boolean = false,
+   syntaxFile        : File = null)
 
   private val optionParser: OptionParser[Config] = new OptionParser[Config] ("scalalr") {
-    head("ScaLALR", "1.1")
+    head("ScaLALR", "1.2")
 
-    opt[File] ('a', "ast-decl").action((f, c) => c.copy(astOutputFile = Some(f)))
-      .text("target file name to write the AST declarations")
-
-    opt[File] ('d', "dsl-decl").action((f, c) => c.copy(dslOutputFile = Some(f)))
+    opt[File] ('d', "directory").action((f, c) => c.copy(directory = Some(f)))
       .text("target file name to write the generated code out")
 
     opt[Unit] ('p', "print").action((_, c) => c.copy(printFlag = true))
