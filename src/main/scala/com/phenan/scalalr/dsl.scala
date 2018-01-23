@@ -155,8 +155,15 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
     case SyntaxAnnotationTree(annotation) => annotation
   }
 */
-  private def removeSyntaxAnnotation (mod: Modifiers): Modifiers = {
+  /*private def removeSyntaxAnnotation (mod: Modifiers): Modifiers = {
     Modifiers(mod.flags, mod.privateWithin, mod.annotations.filter(SyntaxAnnotationTree.unapply(_).isEmpty))
+  }*/
+
+  private def removeSyntaxAnnotation (mod: Modifiers): Modifiers = {
+    Modifiers(mod.flags, mod.privateWithin, mod.annotations.filterNot {
+      case q"new syntax(${_})" => true
+      case _ => false
+    })
   }
 
   private case class SyntaxAnnotation (operatorTrees: List[Tree], operandTrees: List[Tree], pos: Position) {
@@ -182,13 +189,6 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
   private object StartAnnotationTree {
     def unapply (tree: Tree): Boolean = tree match {
       case AnnotationTree("start", Nil) => true
-      case _ => false
-    }
-  }
-
-  private object TokenAnnotationTree {
-    def unapply (tree: Tree): Boolean = tree match {
-      case AnnotationTree("token", Nil) => true
       case _ => false
     }
   }

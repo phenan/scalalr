@@ -14,11 +14,14 @@ object Test {
 
   @syntax(g"baz")
   case object Baz extends Hoge
+}
 
-  @token
-  def int (n: Int): Int = n
 
-  @token
-  def string (s: String): String = s
+@dsl
+object Test2 {
+  @start
+  @syntax(g"foo $n bar $s")
+  def foo (n: Int, s: String): Unit @syntax(g"foo $n bar $s") = {
 
+  }
 }
