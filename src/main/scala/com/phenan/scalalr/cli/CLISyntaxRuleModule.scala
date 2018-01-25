@@ -3,8 +3,7 @@ package cli
 
 import shared._
 
-trait CLISyntaxRuleModule {
-  this: SyntaxRuleModule =>
+trait CLISyntaxRuleModule extends SyntaxRuleModule {
 
   case class NonTerminalImpl (name: String)
   case class LiteralTokenImpl (identifier: String, litType: String)
