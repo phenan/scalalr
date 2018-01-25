@@ -1,5 +1,7 @@
 package com.phenan.scalalr
 
+import cli._
+
 import org.scalatest._
 
 /**
@@ -7,7 +9,7 @@ import org.scalatest._
   */
 class SyntaxRuleTest extends FunSuite with Matchers {
 
-  import CommandLineApplication._
+  import CLIApplication._
 
   test("expression") {
     val syntax = simpleSyntax

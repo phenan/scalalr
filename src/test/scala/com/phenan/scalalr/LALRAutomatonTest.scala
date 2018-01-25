@@ -1,12 +1,14 @@
 package com.phenan.scalalr
 
+import cli._
+
 import org.scalatest._
 
 /**
   * Created by @phenan on 2016/12/12.
   */
 class LALRAutomatonTest extends FunSuite with Matchers {
-  import CommandLineApplication._
+  import CLIApplication._
 
   test ("LALR automaton") {
     val automaton = LALRAutomaton(simpleSyntax)

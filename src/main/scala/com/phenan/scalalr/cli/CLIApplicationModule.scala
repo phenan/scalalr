@@ -1,78 +1,76 @@
 package com.phenan.scalalr
 package cli
 
+import shared._
+
 import java.io._
 
-import shared._
-import shapeless._
-import shapeless.ops.coproduct.Inject
-
 import scala.util.Random
-import scala.util.parsing.combinator.JavaTokenParsers
 
-trait CommandLineApplicationModule {
-  self: SyntaxRuleModule with CodeGeneratorModule =>
+import scala.{Console => Stdio}
 
-  override type NonTerminal = NonTerminalImpl
-  override type LiteralToken = LiteralTokenImpl
+object CLIApplication extends CLIApplicationModule
+  with CLIOptionParserModule with SyntaxFileParserModule with CLISyntaxRuleModule
+  with SyntaxRuleModule with LALRAutomatonModule with CodeGeneratorModule
+
+trait CLIApplicationModule {
+  self: SyntaxFileParserModule with CLIOptionParserModule with CLISyntaxRuleModule with SyntaxRuleModule with CodeGeneratorModule with LALRAutomatonModule =>
+
+  def applicationMain (args: Array[String]): Unit = optionParser.parse(args, Config()) match {
+    case Some(config) if config.syntaxFile != null => run(config)
+    case _ => optionParser.showUsage()
+  }
+
+  def run (config: Config): Unit = {
+    SyntaxParsers.runParser(config.syntaxFile) match {
+      case Right(syntax) =>
+        if (config.printFlag) printGeneratedCode(syntax)
+        else writeGeneratedCode(syntax, config.directory)
+      case Left(msg) =>
+        Stdio.err.println(s"invalid syntax file : ${config.syntaxFile}\n  $msg")
+    }
+  }
+
+  def printGeneratedCode (syntax: SyntaxRule): Unit = {
+    val gen = CodeGenerator(LALRAutomaton(syntax))
+    println("/***********************/")
+    println(gen.generateCode(gen.astDataTypeDefinitions))
+    println("\n/***********************/\n")
+    println(gen.generateCode(gen.program))
+  }
+
+  def writeGeneratedCode (syntax: SyntaxRule, directory: Option[File]): Unit = {
+    val dir = directory.getOrElse(new File("."))
+    val dslFile = new File(dir, syntax.qualifiedName.mkString("/") + ".scala")
+    val parent = dslFile.getParentFile
+    val astFile = new File(parent, "ASTs.scala")
+    parent.mkdirs()
+
+    val gen = CodeGenerator(LALRAutomaton(syntax))
+    val writer1 = new BufferedWriter(new FileWriter(astFile))
+    if (syntax.qualifiedName.init.nonEmpty) {
+      writer1.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
+      writer1.newLine()
+    }
+    writer1.write(gen.generateCode(gen.astDataTypeDefinitions))
+    writer1.close()
+
+    val writer2 = new BufferedWriter(new FileWriter(dslFile))
+    if (syntax.qualifiedName.init.nonEmpty) {
+      writer2.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
+      writer2.newLine()
+      writer2.newLine()
+      writer2.write("import com.phenan.scalalr._")
+      writer2.newLine()
+    }
+    writer2.write(gen.generateCode(gen.program))
+    writer2.close()
+  }
+
+
   override type GeneratedCode = String
 
   override val output: Output = StringOutput
-
-  case class NonTerminalImpl (name: String)
-  case class LiteralTokenImpl (identifier: String, litType: String)
-
-  def nonTerminalSymbol (name: String): Symbol = Symbol(NonTerminalImpl(name))
-  def keywordSymbol (name: String): Symbol = Symbol(Terminal(Keyword(name)))
-  def literalTokenSymbol (identifier: String, litType: String): Symbol = Symbol(Terminal(LiteralTokenImpl(identifier, litType)))
-
-  object SyntaxParsers extends JavaTokenParsers {
-
-    def runParser (file: File): Either[String, SyntaxRule] = {
-      val reader = new BufferedReader(new FileReader(file))
-      val parseResult = parseAll(syntax, reader)
-      reader.close()
-      parseResult match {
-        case Success(r, _)   => Right(r)
-        case NoSuccess(m, _) => Left(m)
-      }
-    }
-
-    def syntax: Parser[SyntaxRule] = "syntax" ~> rep1sep(ident, ".") ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
-      case name ~ start ~ rules => SyntaxRule(name, start, rules)
-    }
-
-    def rule: Parser[Rule] = branch | derivation
-
-    def branch: Parser[BranchRule] = ( nonTerminal <~ "=" ) ~ rep1sep(nonTerminal, "|") <~ ";" ^^ {
-      case left ~ right => BranchRule(left, right)
-    }
-
-    def derivation: Parser[DerivationRule] = ( nonTerminal <~ "=" ) ~ choice[Symbol](terminal, nonTerminal).+ <~ ";" ^^ {
-      case left ~ right => DerivationRule(left, right)
-    }
-
-    def nonTerminal: Parser[NonTerminal] = not(id | int) ~> ident ^^ { id => NonTerminalImpl(id.capitalize) }
-
-    def terminal: Parser[Terminal] = choice[Terminal](id, int, keyword)
-
-    def id: Parser[LiteralToken] = "id" ^^^ LiteralTokenImpl("id", "String")
-
-    def int: Parser[LiteralToken] = "int" ^^^ LiteralTokenImpl("int", "Int")
-
-    def keyword: Parser[Keyword] = stringLiteral ^^ { lit => Keyword(lit.substring(1, lit.length - 1)) }
-
-    private def choice[R <: Coproduct]: Choice[R] = new Choice[R]
-
-    private class Choice [R <: Coproduct] {
-      def apply [T1, T2] (p1: => Parser[T1], p2: => Parser[T2]) (implicit inj1: Inject[R, T1], inj2: Inject[R, T2]): Parser[R] = {
-        p1.map(inj1(_)) | p2.map(inj2(_))
-      }
-      def apply [T1, T2, T3] (p1: => Parser[T1], p2: => Parser[T2], p3: => Parser[T3]) (implicit inj1: Inject[R, T1], inj2: Inject[R, T2], inj3: Inject[R, T3]): Parser[R] = {
-        p1.map(inj1(_)) | p2.map(inj2(_)) | p3.map(inj3(_))
-      }
-    }
-  }
 
   object StringOutput extends Output {
     case class OutputState (indentLevel: Int) {

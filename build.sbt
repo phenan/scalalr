@@ -6,7 +6,7 @@ version := "1.2"
 
 scalaVersion := "2.12.4"
 
-mainClass in (Compile, run) := Some("com.phenan.scalalr.CommandLineApplication")
+mainClass in (Compile, run) := Some("com.phenan.scalalr.Main")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
