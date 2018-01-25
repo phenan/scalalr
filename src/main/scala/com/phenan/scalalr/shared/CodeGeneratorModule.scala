@@ -151,7 +151,7 @@ trait CodeGeneratorModule {
                                               simpleType("N3"),
                                               objectRef("transition").callTransit(objectRef(k.scalaIdent), constructLiteralObj(simpleType("U"), objectRef("literal"))))
 
-      val tokenListArgFunctionDef = functionDef(k.scalaIdent, List(typeParameter("U", simpleType("TokenList")), typeParameter("N3")), List(parameter("tokens", simpleType("U"))),
+      val tokenListArgFunctionDef = functionDef(k.scalaIdent, List(typeParameter("U", genericTokenListType), typeParameter("N3")), List(parameter("tokens", simpleType("U"))),
                                                 List(parameter("transitions", transitionsType(simpleType("U"), simpleType("N2"), simpleType("N3")))),
                                                 simpleType("N3"),
                                                 objectRef("transitions").callTransit(objectRef(k.scalaIdent), objectRef("tokens")))
@@ -162,7 +162,7 @@ trait CodeGeneratorModule {
                             List(functionDef(k.scalaIdent, Nil, Nil, Nil, simpleType("N2"),
                                              objectRef("transition2").callTransit(objectRef("transition1").callTransit(startNodeObjRef, constructLiteralObj(simpleType("T"), objectRef("value"))), keywordObjRef(k))),
                                  literalArgFunctionDef, tokenListArgFunctionDef)),
-           implicitClassDef(List(typeParameter("T", simpleType("TokenList")), typeParameter("N1"), typeParameter("N2")), parameter("value", simpleType("T")),
+           implicitClassDef(List(typeParameter("T", genericTokenListType), typeParameter("N1"), typeParameter("N2")), parameter("value", simpleType("T")),
                             List(parameter("transition1", transitionsType(simpleType("T"), startNodeType, simpleType("N1"))),
                                  parameter("transition2", transitionType(keywordType(k), simpleType("N1"), simpleType("N2")))),
                             List(functionDef(k.scalaIdent, Nil, Nil, Nil, simpleType("N2"),
@@ -202,8 +202,8 @@ trait CodeGeneratorModule {
             case _        => lambda(List(parameter("s", fromType), unusedParameter(terminalType(terminal))),
                                     callApply(objectRef(nodeName(to)), List(fromType), List(objectRef("s"))))
           }
-          implicitFunctionDef(typeParams, Nil, Nil, parameterizedType("Shift", List(terminalType(terminal), fromType, toType)),
-                              callApply(objectRef("Shift"), List(terminalType(terminal), fromType, toType), List(bodyLambda)))
+          implicitFunctionDef(typeParams, Nil, Nil, shiftType(terminalType(terminal), fromType, toType),
+                              constructShiftObj(terminalType(terminal), fromType, toType, bodyLambda))
         }
       }
     }.toList
@@ -214,7 +214,7 @@ trait CodeGeneratorModule {
     lazy val reduceImplicitDefinitions: List[MemberDef] = {
       automaton.reduce.toList.flatMap { case (from, (nonTerminal, expr, lookahead)) =>
         automaton.syntax.rules.collect {
-          case BranchRule(left, right) if left == nonTerminal && expr.size == 1 && right.contains(Coproduct.unsafeGet(expr.head)) => for {
+          case BranchRule(left, right) if left == nonTerminal && expr.lengthCompare(1) == 0 && right.contains(Coproduct.unsafeGet(expr.head)) => for {
             via  <- automaton.reverseEdges(from)
             la   <- lookahead
             dest <- automaton.goTo(via).get(nonTerminal)
@@ -234,9 +234,8 @@ trait CodeGeneratorModule {
     lazy val acceptImplicitDefinitions: List[MemberDef] = automaton.accept.toList.map { node =>
       val fromType = parameterizedType(nodeName(node), simpleTypes("NX"))
       implicitFunctionDef(typeParameters("NX"), Nil, Nil,
-                          parameterizedType("Accept", List(fromType, nonTerminalType(automaton.syntax.start))),
-                          callApply(objectRef("Accept"), List(fromType, nonTerminalType(automaton.syntax.start)),
-                                    List(lambda(List(parameter("s", fromType)), fieldRef(objectRef("s"), "value")))))
+                          acceptType(fromType, nonTerminalType(automaton.syntax.start)),
+                          constructAcceptObj(fromType, nonTerminalType(automaton.syntax.start), lambda(List(parameter("s", fromType)), fieldRef(objectRef("s"), "value"))))
     }
 
     /**
@@ -264,8 +263,8 @@ trait CodeGeneratorModule {
                               callApply(objectRef(nodeName(destination)), List(baseType),
                                         List(fieldRef(objectRef("s"), "prev"), fieldRef(objectRef("s"), "value"))))
 
-      implicitFunctionDef(typeParams, Nil, Nil, parameterizedType("Reduce", List(terminalType(lookahead), fromType, toType)),
-                          callApply(objectRef("Reduce"), List(terminalType(lookahead), fromType, toType), List(bodyLambda)))
+      implicitFunctionDef(typeParams, Nil, Nil, reduceType(terminalType(lookahead), fromType, toType),
+                          constructReduceObj(terminalType(lookahead), fromType, toType, bodyLambda))
     }
 
     private def reduceDerivation (left: NonTerminal, path: List[LRClosure], destination: LRClosure, lookahead: Terminal): MemberDef = {
@@ -286,8 +285,8 @@ trait CodeGeneratorModule {
                               callApply(objectRef(nodeName(destination)), List(baseType),
                                         List(prevField, constructAST(left, astElements))))
 
-      implicitFunctionDef(typeParams, Nil, Nil, parameterizedType("Reduce", List(terminalType(lookahead), fromType, toType)),
-                          callApply(objectRef("Reduce"), List(terminalType(lookahead), fromType, toType), List(bodyLambda)))
+      implicitFunctionDef(typeParams, Nil, Nil, reduceType(terminalType(lookahead), fromType, toType),
+                          constructReduceObj(terminalType(lookahead), fromType, toType, bodyLambda))
     }
 
     /**
@@ -298,7 +297,7 @@ trait CodeGeneratorModule {
     private def terminalType (t: Terminal): Type = t match {
       case Inl(lit)    => literalTokenTypes(lit)
       case Inr(Inl(k)) => objectType(keywordTokenTypeNames(k))
-      case Inr(Inr(_)) => objectType("EoI")
+      case Inr(Inr(_)) => objectType("com.phenan.scalalr.internal.EoI")
     }
 
     /**
@@ -306,26 +305,40 @@ trait CodeGeneratorModule {
       * LALR オートマトンの開始ノードからそのリテラルのエッジが出ている場合、そのエッジが指すノードをリテラルの型として用いる
       */
     private lazy val literalTokenTypes: Map[LiteralToken, Type] = automaton.syntax.literals.map { literal =>
-      literal -> parameterizedType("Literal", List(literalType(literal)))
+      literal -> parameterizedType("com.phenan.scalalr.internal.Literal", List(literalType(literal)))
     }.toMap
 
-    private def genericLiteralType (name: String): Type = parameterizedType("Literal", simpleTypes(name))
+    private def genericLiteralType (name: String): Type = parameterizedType("com.phenan.scalalr.internal.Literal", simpleTypes(name))
 
-    private def constructLiteralObj (litType: Type, arg: Expr): Expr = callApply(objectRef("Literal"), List(litType), List(arg))
+    private def constructLiteralObj (litType: Type, arg: Expr): Expr = callApply(objectRef("com.phenan.scalalr.internal.Literal"), List(litType), List(arg))
 
-    private def transitionType(terminal: Type, from: Type, to: Type): Type = parameterizedType("Transition", List(terminal, from, to))
+    private def constructShiftObj (terminal: Type, from: Type, to: Type, body: Expr): Expr = callApply(objectRef("com.phenan.scalalr.internal.Shift"), List(terminal, from, to), List(body))
 
-    private def transitionsType(tokens: Type, from: Type, to: Type): Type = parameterizedType("Transitions", List(tokens, from, to))
+    private def constructReduceObj (terminal: Type, from: Type, to: Type, body: Expr): Expr = callApply(objectRef("com.phenan.scalalr.internal.Reduce"), List(terminal, from, to), List(body))
+
+    private def constructAcceptObj (from: Type, to: Type, body: Expr): Expr = callApply(objectRef("com.phenan.scalalr.internal.Accept"), List(from, to), List(body))
+
+    private def shiftType (terminal: Type, from: Type, to: Type): Type = parameterizedType("com.phenan.scalalr.internal.Shift", List(terminal, from, to))
+
+    private def reduceType (terminal: Type, from: Type, to: Type): Type = parameterizedType("com.phenan.scalalr.internal.Reduce", List(terminal, from, to))
+
+    private def acceptType (from: Type, to: Type): Type = parameterizedType("com.phenan.scalalr.internal.Accept", List(from, to))
+
+    private def transitionType (terminal: Type, from: Type, to: Type): Type = parameterizedType("com.phenan.scalalr.internal.Transition", List(terminal, from, to))
+
+    private def transitionsType (tokens: Type, from: Type, to: Type): Type = parameterizedType("com.phenan.scalalr.internal.Transitions", List(tokens, from, to))
+
+    private def genericTokenListType: Type = simpleType("com.phenan.scalalr.internal.TokenList")
 
     private def tokenListType(tokenTypes: Type*): Type = tokenListType(tokenTypes.toList)
 
     private def tokenListType(tokenTypes: List[Type]): Type = tokenTypes match {
-      case head :: tail => parameterizedType("TokenListCons", List(head, tokenListType(tail)))
-      case Nil          => simpleType("TokenListSentinel")
+      case head :: tail => parameterizedType("com.phenan.scalalr.internal.TokenListCons", List(head, tokenListType(tail)))
+      case Nil          => simpleType("com.phenan.scalalr.internal.TokenListSentinel")
     }
 
     private def singleTokenListObj (tokenType: Type, token: Expr): Expr = {
-      callApply(objectRef("TokenListCons"), List(tokenType, simpleType("TokenListSentinel")), List(token, objectRef("TokenListSentinel")))
+      callApply(objectRef("com.phenan.scalalr.internal.TokenListCons"), List(tokenType, simpleType("com.phenan.scalalr.internal.TokenListSentinel")), List(token, objectRef("com.phenan.scalalr.internal.TokenListSentinel")))
     }
 
     private def keywordType (k: Keyword): Type = objectType(keywordTokenTypeNames(k))

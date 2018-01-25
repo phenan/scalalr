@@ -1,5 +1,7 @@
 package com.phenan
 
+import com.phenan.scalalr.internal._
+
 import scala.language.implicitConversions
 
 package object scalalr {

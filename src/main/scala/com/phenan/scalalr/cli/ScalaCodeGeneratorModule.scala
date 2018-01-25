@@ -38,9 +38,6 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
     if (syntax.qualifiedName.init.nonEmpty) {
       writer2.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
       writer2.newLine()
-      writer2.newLine()
-      writer2.write("import com.phenan.scalalr._")
-      writer2.newLine()
     }
     writer2.write(gen.generateCode(gen.program))
     writer2.close()

@@ -1,4 +1,4 @@
-package com.phenan.scalalr
+package com.phenan.scalalr.internal
 
 case class Shift [T, N1, N2] (shift: (N1, T) => N2)
 case class Reduce [T, N1, N2] (reduce: N1 => N2)

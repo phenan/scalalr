@@ -1,4 +1,4 @@
-package com.phenan.scalalr
+package com.phenan.scalalr.internal
 
 sealed trait TokenList
 case class TokenListCons [+A, +B <: TokenList] (head: A, tail: B) extends TokenList
