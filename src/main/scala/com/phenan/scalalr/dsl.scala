@@ -1,15 +1,17 @@
 package com.phenan.scalalr
 
+import com.phenan.scalalr.macroimpl._
+
 import scala.annotation.StaticAnnotation
 import scala.language.experimental.macros
 
-class dsl extends StaticAnnotation {
+class dsl [T] extends StaticAnnotation {
   def macroTransform (annottees: Any*): Any = macro dslBundle.impl
 }
 
-class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
+class dslBundle (val c: scala.reflect.macros.whitebox.Context) extends TypingModule with AnnotationFinderModule with MacroModule {
   import c.universe._
-  import Flag._
+  //import Flag._
 
   /**
     * マクロのエントリーポイント
@@ -57,6 +59,7 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
     declarationBody.map {
       case ClassDef(mod, name, typeParams, template) => ClassDef(removeSyntaxAnnotation(mod), name, typeParams, template)
       case ModuleDef(mod, name, template) => ModuleDef(removeSyntaxAnnotation(mod), name, template)
+      case DefDef(mod, name, typeParams, params, returnType, body) => DefDef(removeSyntaxAnnotation(mod), name, typeParams, params, returnType, body)
       case other => other
     }
   }
@@ -155,16 +158,6 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
     case SyntaxAnnotationTree(annotation) => annotation
   }
 */
-  /*private def removeSyntaxAnnotation (mod: Modifiers): Modifiers = {
-    Modifiers(mod.flags, mod.privateWithin, mod.annotations.filter(SyntaxAnnotationTree.unapply(_).isEmpty))
-  }*/
-
-  private def removeSyntaxAnnotation (mod: Modifiers): Modifiers = {
-    Modifiers(mod.flags, mod.privateWithin, mod.annotations.filterNot {
-      case q"new syntax(${_})" => true
-      case _ => false
-    })
-  }
 
   private case class SyntaxAnnotation (operatorTrees: List[Tree], operandTrees: List[Tree], pos: Position) {
     /*def operators: List[List[Keyword]] = operatorTrees.map {
@@ -175,7 +168,7 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
 */
   }
 
-  private object SyntaxAnnotationTree {
+  /*private object SyntaxAnnotationTree {
     def unapply (tree: Tree): Option[SyntaxAnnotation] = tree match {
       case AnnotationTree("syntax", List(Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("g")), args))) =>
         Some(SyntaxAnnotation(parts, args, tree.pos))
@@ -191,12 +184,5 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) {
       case AnnotationTree("start", Nil) => true
       case _ => false
     }
-  }
-
-  private object AnnotationTree {
-    def unapply (tree: Tree): Option[(String, List[Tree])] = tree match {
-      case Apply(Select(New(Ident(TypeName(annName))), termNames.CONSTRUCTOR), args) => Some((annName, args))
-      case _ => None
-    }
-  }
+  }*/
 }

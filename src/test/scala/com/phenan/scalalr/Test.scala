@@ -1,8 +1,7 @@
 package com.phenan.scalalr
 
-@dsl
+@dsl[Test.Foo]
 object Test {
-  @start
   @syntax
   sealed trait Hoge
 
@@ -14,14 +13,22 @@ object Test {
 
   @syntax(g"baz")
   case object Baz extends Hoge
+
+  /*@syntax(g"foo $n bar $s")
+  def foo (n: Int, s: String): List[scala.Unit] @syntax(g"foo $n bar $s") = ???*/
 }
 
-
-@dsl
+/*@dsl[Unit]
 object Test2 {
-  @start
   @syntax(g"foo $n bar $s")
-  def foo (n: Int, s: String): Unit @syntax(g"foo $n bar $s") = {
+  def foo (n: Int, s: String): List[scala.Unit] @syntax(g"foo $n bar $s") = ???
+}*/
 
-  }
-}
+
+
+
+
+
+
+
+
