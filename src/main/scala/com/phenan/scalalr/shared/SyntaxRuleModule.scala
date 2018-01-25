@@ -1,8 +1,8 @@
-package com.phenan.scalalr
-
-import collection.breakOut
+package com.phenan.scalalr.shared
 
 import shapeless._
+
+import collection.breakOut
 
 trait SyntaxRuleModule {
 
@@ -31,80 +31,7 @@ trait SyntaxRuleModule {
   type LiteralToken
 
   case class Keyword (kw: String) {
-    lazy val scalaIdent: String = kw match {
-      case "abstract"  => "$$abstract"
-      case "case"      => "$$case"
-      case "catch"     => "$$catch"
-      case "class"     => "$$class"
-      case "def"       => "$$def"
-      case "do"        => "$$do"
-      case "else"      => "$$else"
-      case "extends"   => "$$extends"
-      case "false"     => "$$false"
-      case "final"     => "$$final"
-      case "finally"   => "$$finally"
-      case "for"       => "$$for"
-      case "forSome"   => "$$forSome"
-      case "if"        => "$$if"
-      case "implicit"  => "$$implicit"
-      case "import"    => "$$import"
-      case "lazy"      => "$$lazy"
-      case "match"     => "$$match"
-      case "new"       => "$$new"
-      case "null"      => "$$null"
-      case "object"    => "$$object"
-      case "override"  => "$$override"
-      case "package"   => "$$package"
-      case "private"   => "$$private"
-      //case "protected" => "$$ protected" // なぜか IntelliJ では protected だけバグる
-      case "return"    => "$$return"
-      case "sealed"    => "$$sealed"
-      case "super"     => "$$super"
-      case "this"      => "$$this"
-      case "throw"     => "$$throw"
-      case "trait"     => "$$trait"
-      case "true"      => "$$true"
-      case "try"       => "$$try"
-      case "type"      => "$$type"
-      case "val"       => "$$val"
-      case "var"       => "$$var"
-      case "while"     => "$$while"
-      case "with"      => "$$with"
-      case "yield"     => "$$yield"
-      case _ => kw.flatMap {
-        case '!'  => "$$exclam"
-        case '\"' => "$$quotedbl"
-        case '#'  => "$$numbersign"
-        case '%'  => "$$percent"
-        case '&'  => "$$ampersand"
-        case '\'' => "$$quotesingle"
-        case '('  => "$$parenleft"
-        case ')'  => "$$parenright"
-        case '*'  => "$$asterisk"
-        case '+'  => "$$plus"
-        case ','  => "$$comma"
-        case '-'  => "$$hyphen"
-        case '.'  => "$$period"
-        case '/'  => "$$slash"
-        case ':'  => "$$colon"
-        case ';'  => "$$semicolon"
-        case '<'  => "$$less"
-        case '='  => "$$equal"
-        case '>'  => "$$greater"
-        case '?'  => "$$question"
-        case '@'  => "$$at"
-        case '['  => "$$bracketleft"
-        case '\\' => "$$backslash"
-        case ']'  => "$$bracketright"
-        case '^'  => "$$asciicircum"
-        case '`'   => "$$grave"
-        case '{'  => "$$braceleft"
-        case '|'  => "$$bar"
-        case '}'  => "$$braceright"
-        case '~'  => "$$asciitilde"
-        case c    => c.toString
-      }
-    }
+    lazy val scalaIdent: String = translateKeyword(kw)
   }
 
   case object EndOfInput
@@ -274,6 +201,81 @@ trait SyntaxRuleModule {
       case Inr(Inl(t)) :: _                => set + t
       case Inr(Inr(_)) :: rest             => lookupFirst(rest, lookahead, set)
       case Nil                             => set ++ lookahead
+    }
+  }
+
+  private def translateKeyword (kw: String): String = kw match {
+    case "abstract"  => "$$abstract"
+    case "case"      => "$$case"
+    case "catch"     => "$$catch"
+    case "class"     => "$$class"
+    case "def"       => "$$def"
+    case "do"        => "$$do"
+    case "else"      => "$$else"
+    case "extends"   => "$$extends"
+    case "false"     => "$$false"
+    case "final"     => "$$final"
+    case "finally"   => "$$finally"
+    case "for"       => "$$for"
+    case "forSome"   => "$$forSome"
+    case "if"        => "$$if"
+    case "implicit"  => "$$implicit"
+    case "import"    => "$$import"
+    case "lazy"      => "$$lazy"
+    case "match"     => "$$match"
+    case "new"       => "$$new"
+    case "null"      => "$$null"
+    case "object"    => "$$object"
+    case "override"  => "$$override"
+    case "package"   => "$$package"
+    case "private"   => "$$private"
+    //case "protected" => "$$ protected" // なぜか IntelliJ では protected だけバグる
+    case "return"    => "$$return"
+    case "sealed"    => "$$sealed"
+    case "super"     => "$$super"
+    case "this"      => "$$this"
+    case "throw"     => "$$throw"
+    case "trait"     => "$$trait"
+    case "true"      => "$$true"
+    case "try"       => "$$try"
+    case "type"      => "$$type"
+    case "val"       => "$$val"
+    case "var"       => "$$var"
+    case "while"     => "$$while"
+    case "with"      => "$$with"
+    case "yield"     => "$$yield"
+    case _ => kw.flatMap {
+      case '!'  => "$$exclam"
+      case '\"' => "$$quotedbl"
+      case '#'  => "$$numbersign"
+      case '%'  => "$$percent"
+      case '&'  => "$$ampersand"
+      case '\'' => "$$quotesingle"
+      case '('  => "$$parenleft"
+      case ')'  => "$$parenright"
+      case '*'  => "$$asterisk"
+      case '+'  => "$$plus"
+      case ','  => "$$comma"
+      case '-'  => "$$hyphen"
+      case '.'  => "$$period"
+      case '/'  => "$$slash"
+      case ':'  => "$$colon"
+      case ';'  => "$$semicolon"
+      case '<'  => "$$less"
+      case '='  => "$$equal"
+      case '>'  => "$$greater"
+      case '?'  => "$$question"
+      case '@'  => "$$at"
+      case '['  => "$$bracketleft"
+      case '\\' => "$$backslash"
+      case ']'  => "$$bracketright"
+      case '^'  => "$$asciicircum"
+      case '`'   => "$$grave"
+      case '{'  => "$$braceleft"
+      case '|'  => "$$bar"
+      case '}'  => "$$braceright"
+      case '~'  => "$$asciitilde"
+      case c    => c.toString
     }
   }
 }

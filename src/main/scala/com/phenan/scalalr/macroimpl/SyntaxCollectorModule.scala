@@ -1,6 +1,7 @@
-package com.phenan.scalalr.macroimpl
+package com.phenan.scalalr
+package macroimpl
 
-import com.phenan.scalalr.SyntaxRuleModule
+import shared.SyntaxRuleModule
 
 trait SyntaxCollectorModule {
   this: SyntaxRuleModule with TypingModule with AnnotationFinderModule with MacroModule =>

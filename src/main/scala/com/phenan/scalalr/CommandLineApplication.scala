@@ -1,5 +1,8 @@
 package com.phenan.scalalr
 
+import cli._
+import shared._
+
 import java.io._
 
 import scala.{Console => Stdio}

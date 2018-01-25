@@ -1,12 +1,14 @@
 package com.phenan.scalalr
+package cli
 
 import java.io._
 
-import scala.util.parsing.combinator.JavaTokenParsers
+import shared._
 import shapeless._
 import shapeless.ops.coproduct.Inject
 
 import scala.util.Random
+import scala.util.parsing.combinator.JavaTokenParsers
 
 trait CommandLineApplicationModule {
   self: SyntaxRuleModule with CodeGeneratorModule =>

@@ -1,4 +1,4 @@
-package com.phenan.scalalr
+package com.phenan.scalalr.shared
 
 import shapeless._
 
