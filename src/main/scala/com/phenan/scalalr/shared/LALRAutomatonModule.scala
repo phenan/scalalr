@@ -35,11 +35,11 @@ trait LALRAutomatonModule {
 
     /**
       * reduce: 非終端記号の導出による遷移
-      * 遷移元 LR closure -> (導出される非終端記号, 導出元の文法式, 先読み記号の集合)
+      * 遷移元 LR closure -> (文法式, 先読み記号の集合)
       */
-    lazy val reduce: Map[LRClosure, (NonTerminal, List[Symbol], Set[Terminal])] = nodes.flatMap { closure =>
-      closure.items.collect { case (LRItem(nt, expr, Nil), lookahead) =>
-        (closure, (nt, expr, lookahead))
+    lazy val reduce: Map[LRClosure, (Rule, Set[Terminal])] = nodes.flatMap { closure =>
+      closure.items.collect { case (LRItem(rule, Nil), lookahead) =>
+        (closure, (rule, lookahead))
       }
     } (breakOut)
 
@@ -56,7 +56,7 @@ trait LALRAutomatonModule {
       */
     lazy val accept: Set[LRClosure] = nodes.filter {
       _.items.exists { case (item, lookahead) =>
-        item.nt == syntax.start && item.rest.isEmpty && lookahead.contains(Terminal.eoi)
+        item.rule.left == syntax.start && item.rest.isEmpty && lookahead.contains(Terminal.eoi)
       }
     }
 
@@ -114,7 +114,7 @@ trait LALRAutomatonModule {
       * LR オートマトンの開始地点となる。
       */
     lazy val start: LRClosure = {
-      growLRClosure(LRClosure(syntax.expressions(syntax.start).map(e => LRItem(syntax.start, e, e) -> Set(Terminal.eoi)).toMap))
+      growLRClosure(LRClosure(syntax.expressions(syntax.start).map(r => LRItem(r, r.right) -> Set(Terminal.eoi)).toMap))
     }
 
     /**
@@ -130,8 +130,8 @@ trait LALRAutomatonModule {
       * @return 完成した LR closure
       */
     private def growLRClosure (closure: LRClosure): LRClosure = {
-      val newClosure = closure ++ closure.items.collect { case (LRItem(_, _, Inl(n) :: rest), lookahead) =>
-        syntax.expressions(n).map(e => LRItem(n, e, e) -> syntax.lookupFirst(rest, lookahead))
+      val newClosure = closure ++ closure.items.collect { case (LRItem(_, Inl(n) :: rest), lookahead) =>
+        syntax.expressions(n).map(r => LRItem(r, r.right) -> syntax.lookupFirst(rest, lookahead))
       }.flatten
       if (closure == newClosure) closure
       else growLRClosure(newClosure)
@@ -166,7 +166,7 @@ trait LALRAutomatonModule {
       * @return 遷移のために必要なシンボル, 遷移先の LR item, 遷移後の先読み集合
       */
     private def transitions (closure: LRClosure): Iterable[(Symbol, LRItem, Set[Terminal])] = closure.items.collect {
-      case (LRItem(nt, expr, symbol :: rest), lookahead) => (symbol, LRItem(nt, expr, rest), lookahead)
+      case (LRItem(rule, symbol :: rest), lookahead) => (symbol, LRItem(rule, rest), lookahead)
     }
   }
 
@@ -179,6 +179,6 @@ trait LALRAutomatonModule {
     }
   }
 
-  case class LRItem (nt: NonTerminal, expr: List[Symbol], rest: List[Symbol])
+  case class LRItem (rule: Rule, rest: List[Symbol])
 
 }

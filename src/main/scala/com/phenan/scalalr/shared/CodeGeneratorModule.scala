@@ -67,7 +67,7 @@ trait CodeGeneratorModule {
     def callApply (receiver: Expr, typeArgs: List[Type], args: List[Expr]): Expr
     def lambda (parameters: List[Parameter], body: Expr): Expr
 
-    def constructAST (nonTerminal: NonTerminal, args: List[Expr]): Expr
+    def constructAST (rule: Rule, args: List[Expr]): Expr
   }
 
   case class CodeGenerator (automaton: LALRAutomaton) {
@@ -192,21 +192,12 @@ trait CodeGeneratorModule {
     /**
       * Reduce 操作を表す implicit value の定義
       */
-    lazy val reduceImplicitDefinitions: List[MemberDef] = {
-      automaton.reduce.toList.flatMap { case (from, (nonTerminal, expr, lookahead)) =>
-        automaton.syntax.rules.collect {
-          case BranchRule(left, right) if left == nonTerminal && expr.lengthCompare(1) == 0 && right.contains(Coproduct.unsafeGet(expr.head)) => for {
-            via  <- automaton.reverseEdges(from)
-            la   <- lookahead
-            dest <- automaton.goTo(via).get(nonTerminal)
-          } yield reduceBranch(from, via, dest, la)
-          case DerivationRule(left, right) if left == nonTerminal && right == expr => for {
-            path <- reducePath(from, expr)
-            la   <- lookahead
-            dest <- automaton.goTo(path.head).get(nonTerminal)
-          } yield reduceDerivation(nonTerminal, path, dest, la)
-        }.flatten
-      }
+    lazy val reduceImplicitDefinitions: List[MemberDef] = automaton.reduce.toList.flatMap {
+      case (from, (rule, lookahead)) => for {
+        path <- reducePath(from, rule)
+        la   <- lookahead
+        dest <- automaton.goTo(path.head).get(rule.left)
+      } yield reduceImplicitDefinition(rule, path, dest, la)
     }
 
     /**
@@ -222,33 +213,17 @@ trait CodeGeneratorModule {
     /**
       * Reduce による巻き戻りの道のりを求める関数
       * @param from reduce の開始地点となる LR closure
-      * @param expr reduce 対象の文法
+      * @param rule reduce 対象の文法
       * @return Reduce による巻き戻りの道のりを表現する LR closure のリストの集合
       */
-    private def reducePath (from: LRClosure, expr: List[Symbol]) = expr.foldRight(Set(List(from))) { (symbol, set) =>
+    private def reducePath (from: LRClosure, rule: Rule) = rule.right.foldRight(Set(List(from))) { (symbol, set) =>
       for {
         path <- set if automaton.state(path.head) == symbol
         node <- automaton.reverseEdges(path.head)
       } yield node :: path
     }
 
-    private def reduceBranch (departure: LRClosure, via: LRClosure, destination: LRClosure, lookahead: Terminal): MemberDef = {
-      val (typeParams, baseType) =
-        if (automaton.start == via) (Nil, startNodeType)
-        else (typeParameters("NX"), parameterizedType(nodeName(via), simpleTypes("NX")))
-
-      val fromType = parameterizedType(nodeName(departure), List(baseType))
-      val toType = parameterizedType(nodeName(destination), List(baseType))
-
-      val bodyLambda = lambda(List(parameter("s", fromType)),
-                              callApply(objectRef(nodeName(destination)), List(baseType),
-                                        List(fieldRef(objectRef("s"), "prev"), fieldRef(objectRef("s"), "value"))))
-
-      implicitFunctionDef(typeParams, Nil, Nil, reduceType(terminalType(lookahead), fromType, toType),
-                          constructReduceObj(terminalType(lookahead), fromType, toType, bodyLambda))
-    }
-
-    private def reduceDerivation (left: NonTerminal, path: List[LRClosure], destination: LRClosure, lookahead: Terminal): MemberDef = {
+    private def reduceImplicitDefinition (rule: Rule, path: List[LRClosure], destination: LRClosure, lookahead: Terminal): MemberDef = {
       val (typeParams, baseType) =
         if (automaton.start == path.head) (Nil, startNodeType)
         else (typeParameters("NX"), parameterizedType(nodeName(path.head), simpleTypes("NX")))
@@ -264,7 +239,7 @@ trait CodeGeneratorModule {
       }
       val bodyLambda = lambda(List(parameter("s", fromType)),
                               callApply(objectRef(nodeName(destination)), List(baseType),
-                                        List(prevField, constructAST(left, astElements))))
+                                        List(prevField, constructAST(rule, astElements))))
 
       implicitFunctionDef(typeParams, Nil, Nil, reduceType(terminalType(lookahead), fromType, toType),
                           constructReduceObj(terminalType(lookahead), fromType, toType, bodyLambda))

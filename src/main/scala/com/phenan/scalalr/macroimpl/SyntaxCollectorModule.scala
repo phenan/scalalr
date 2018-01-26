@@ -33,7 +33,7 @@ trait SyntaxCollectorModule {
     }
   }
 
-  private def collectRules (body: List[Tree], typeChecker: TypeChecker): List[Rule] = collectRules(body, typeChecker, Nil, Nil)
+  private def collectRules (body: List[Tree], typeChecker: TypeChecker): List[Rule] = ??? /*collectRules(body, typeChecker, Nil, Nil)
 
   private def collectRules (body: List[Tree], typeChecker: TypeChecker, derivations: List[DerivationRule], branches: List[(NonTerminal, NonTerminal)]): List[Rule] = {
     body match {
@@ -51,5 +51,5 @@ trait SyntaxCollectorModule {
       case Nil =>
         ???
     }
-  }
+  }*/
 }

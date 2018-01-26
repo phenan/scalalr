@@ -26,17 +26,17 @@ trait SyntaxFileParserModule {
     }
 
     def syntax: Parser[SyntaxRule] = "syntax" ~> rep1sep(ident, ".") ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
-      case name ~ start ~ rules => SyntaxRule(name, start, rules)
+      case name ~ start ~ rules => SyntaxRule(name, start, rules.flatten)
     }
 
-    def rule: Parser[Rule] = branch | derivation
+    def rule: Parser[List[Rule]] = branch | derivation
 
-    def branch: Parser[BranchRule] = ( nonTerminal <~ "=" ) ~ rep1sep(nonTerminal, "|") <~ ";" ^^ {
-      case left ~ right => BranchRule(left, right)
+    def branch: Parser[List[Rule]] = ( nonTerminal <~ "=" ) ~ rep1sep(nonTerminal, "|") <~ ";" ^^ {
+      case left ~ right => right.map(nt => Rule(left, List(Symbol(nt)), Branch))
     }
 
-    def derivation: Parser[DerivationRule] = ( nonTerminal <~ "=" ) ~ choice[Symbol](terminal, nonTerminal).+ <~ ";" ^^ {
-      case left ~ right => DerivationRule(left, right)
+    def derivation: Parser[List[Rule]] = ( nonTerminal <~ "=" ) ~ choice[Symbol](terminal, nonTerminal).+ <~ ";" ^^ {
+      case left ~ right => List(Rule(left, right, Derivation))
     }
 
     def nonTerminal: Parser[NonTerminal] = not(id | int) ~> ident ^^ { id => NonTerminalImpl(id.capitalize) }

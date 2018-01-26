@@ -116,8 +116,10 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
     def callApply (receiver: Expr, typeArgs: List[Type], args: List[Expr]): Expr = s => s"${receiver(s)}${typeArguments(typeArgs)}${arguments(args)(s)}"
     def lambda (params: List[Parameter], body: Expr): Expr = s => s"{ ${parameters(params)} => ${body(s)} }"
 
-    def constructAST (nonTerminal: NonTerminal, args: List[Expr]): Expr = s => {
-      s"${nonTerminal.name}${arguments(args)(s)}"
+    def constructAST (rule: Rule, args: List[Expr]): Expr = s => rule.action match {
+      case Branch if args.lengthCompare(1) == 0 => args.head(s)
+      case Derivation => s"${rule.left.name}${arguments(args)(s)}"
+      case _ => throw new RuntimeException("branch rule should take only one argument")
     }
 
     private def extendsClause (superType: Option[Type]): String = superType match {

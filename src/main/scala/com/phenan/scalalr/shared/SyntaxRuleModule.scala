@@ -38,28 +38,12 @@ trait SyntaxRuleModule {
 
   case object EmptyString
 
+  type SemanticAction
+
   /**
     * 文法規則
     */
-  sealed trait Rule {
-    def left: NonTerminal
-  }
-
-  /**
-    * 分岐規則
-    * A := B | C | D のような規則
-    * @param left 左辺
-    * @param rules 分岐先
-    */
-  case class BranchRule (left: NonTerminal, rules: List[NonTerminal]) extends Rule
-
-  /**
-    * 導出規則
-    * A := x y z のような規則
-    * @param left 左辺
-    * @param right 文法式
-    */
-  case class DerivationRule (left: NonTerminal, right: List[Symbol]) extends Rule
+  case class Rule (left: NonTerminal, right: List[Symbol], action: SemanticAction)
 
   /**
     * 文法を表現するデータ
@@ -77,12 +61,7 @@ trait SyntaxRuleModule {
     /**
       * 文法規則一覧
       */
-    lazy val expressions: Map[NonTerminal, List[List[Symbol]]] = rules.groupBy(_.left).mapValues {
-      _.flatMap {
-        case BranchRule(_, rs)        => rs.map(r => List(Symbol(r)))
-        case DerivationRule(_, right) => List(right)
-      }
-    }
+    lazy val expressions: Map[NonTerminal, List[Rule]] = rules.groupBy(_.left)
 
     /**
       * 全ての非終端記号
@@ -92,9 +71,8 @@ trait SyntaxRuleModule {
     /**
       * 全ての終端記号
       */
-    lazy val terminals: Set[Terminal] = rules.flatMap {
-      case BranchRule(_, _)         => Nil
-      case DerivationRule(_, right) => right.collect { case Inr(Inl(t)) => t }
+    lazy val terminals: Set[Terminal] = rules.flatMap { rule =>
+      rule.right.collect { case Inr(Inl(t)) => t }
     } (breakOut)
 
     /**
@@ -141,7 +119,7 @@ trait SyntaxRuleModule {
     private def buildCanEmpty (set: Set[NonTerminal]): Set[NonTerminal] = {
       val newSet = set.filter {
         expressions(_).exists {
-          _.forall {
+          _.right.forall {
             case Inl(n)      => set.contains(n)
             case Inr(Inl(_)) => false
             case Inr(Inr(_)) => true
@@ -167,7 +145,7 @@ trait SyntaxRuleModule {
       */
     private def buildFirstSet (fs: Map[NonTerminal, Set[Terminal]]): Map[NonTerminal, Set[Terminal]] = {
       val newSet = fs.map {
-        case (nt, set) => nt -> expressions(nt).foldRight(set)(updateFirst(_, fs, _))
+        case (nt, set) => nt -> expressions(nt).map(_.right).foldRight(set)(updateFirst(_, fs, _))
       }
       if (fs == newSet) fs
       else buildFirstSet(newSet)
