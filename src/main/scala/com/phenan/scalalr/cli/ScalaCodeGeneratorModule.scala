@@ -65,7 +65,7 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
 
     def generateUniqueName: String = "ScaLALR$" + Random.nextInt.abs
 
-    def literalIdentifier (lit: LiteralToken): String = lit.identifier
+    def literalIdentifier (lit: LiteralToken): Option[String] = lit.identifier
 
     def simpleType (typeName: String): Type = typeName
     def objectType (objectName: String): Type = objectName + ".type"

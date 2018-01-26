@@ -2,21 +2,27 @@ package com.phenan.arith
 
 import com.phenan.scalalr._
 
+import scala.language.postfixOps
+
 object Main {
   import MathDSL._
 
   def main (args: Array[String]): Unit = {
 
-    val program: Program = int(10) $$plus int(2) $$asterisk $$parenleft int(10) $$slash int(5) $$parenright end
+    val program: Program = literal(10) $$plus literal(2) $$asterisk $$parenleft literal(10) $$slash literal(5) $$parenright
+
     println(program)
 
-    val program2: Program = int(10).$$plus.int(2).$$asterisk.$$parenleft.int(10).$$slash.int(5).$$parenright.end
+    val program2: Program = literal(10).$$plus.literal(2).$$asterisk.$$parenleft.literal(10).$$slash.literal(5).$$parenright
+
     println(program2)
 
-    val program3: Program = int(10) $$plus (2) $$asterisk $$parenleft int(10) $$slash (5) $$parenright end
+    val program3: Program = literal(10) $$plus (2) $$asterisk $$parenleft literal(10) $$slash (5) $$parenright
+
     println(program3)
 
-    val program4: Program = (10) $$plus (2) $$asterisk $$parenleft (10) $$slash (5) $$hyphen (8) $$slash (2) $$parenright end
+    val program4: Program = (10) $$plus (2) $$asterisk $$parenleft (10) $$slash (5) $$hyphen (8) $$slash (2) $$parenright
+
     println(program4)
 
     val longProgram: Program =
@@ -49,7 +55,8 @@ object Main {
       261 $$plus 262 $$plus 263 $$plus 264 $$plus 265 $$plus 266 $$plus 267 $$plus 268 $$plus 269 $$plus 270 $$plus
       271 $$plus 272 $$plus 273 $$plus 274 $$plus 275 $$plus 276 $$plus 277 $$plus 278 $$plus 279 $$plus 280 $$plus
       281 $$plus 282 $$plus 283 $$plus 284 $$plus 285 $$plus 286 $$plus 287 $$plus 288 $$plus 289 $$plus 290 $$plus
-      291 $$plus 292 $$plus 293 $$plus 294 $$plus 295 $$plus 296 $$plus 297 $$plus 298 $$plus 299 $$plus 300 end $$semicolon
+      291 $$plus 292 $$plus 293 $$plus 294 $$plus 295 $$plus 296 $$plus 297 $$plus 298 $$plus 299 $$plus 300
+
     println(longProgram)
   }
 }

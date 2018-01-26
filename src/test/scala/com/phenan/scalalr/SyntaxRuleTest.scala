@@ -23,10 +23,10 @@ class SyntaxRuleTest extends FunSuite with Matchers {
   test("first") {
     val syntax = simpleSyntax
 
-    syntax.lookupFirst(List(nonTerminalSymbol("S"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
-    syntax.lookupFirst(List(nonTerminalSymbol("T"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
-    syntax.lookupFirst(List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
-    syntax.lookupFirst(List(nonTerminalSymbol("M"))) shouldBe Set(Terminal(LiteralTokenImpl("int", "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("S"))) shouldBe Set(Terminal(LiteralTokenImpl(Some("int"), "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("T"))) shouldBe Set(Terminal(LiteralTokenImpl(Some("int"), "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("T"), keywordSymbol("mul"), nonTerminalSymbol("N"))) shouldBe Set(Terminal(LiteralTokenImpl(Some("int"), "Int")))
+    syntax.lookupFirst(List(nonTerminalSymbol("M"))) shouldBe Set(Terminal(LiteralTokenImpl(Some("int"), "Int")))
     syntax.lookupFirst(List(keywordSymbol("mul"), nonTerminalSymbol("N"))) shouldBe Set(Terminal(Keyword("mul")))
   }
 

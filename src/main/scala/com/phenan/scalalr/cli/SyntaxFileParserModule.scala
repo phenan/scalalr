@@ -39,13 +39,11 @@ trait SyntaxFileParserModule {
       case left ~ right => List(Rule(left, right, Derivation))
     }
 
-    def nonTerminal: Parser[NonTerminal] = not(id | int) ~> ident ^^ { id => NonTerminalImpl(id.capitalize) }
+    def nonTerminal: Parser[NonTerminal] = ident ^^ { id => NonTerminalImpl(id.capitalize) }
 
-    def terminal: Parser[Terminal] = choice[Terminal](id, int, keyword)
+    def terminal: Parser[Terminal] = choice[Terminal](literal, keyword)
 
-    def id: Parser[LiteralToken] = "id" ^^^ LiteralTokenImpl("id", "String")
-
-    def int: Parser[LiteralToken] = "int" ^^^ LiteralTokenImpl("int", "Int")
+    def literal: Parser[LiteralToken] = "(" ~> ((ident <~ ":").? ~ ident) <~ ")" ^^ { case id ~ t => LiteralTokenImpl(id, t) }
 
     def keyword: Parser[Keyword] = stringLiteral ^^ { lit => Keyword(lit.substring(1, lit.length - 1)) }
 

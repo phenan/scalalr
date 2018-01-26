@@ -6,7 +6,7 @@ import shared._
 trait CLISyntaxRuleModule extends SyntaxRuleModule {
 
   case class NonTerminalImpl (name: String)
-  case class LiteralTokenImpl (identifier: String, litType: String)
+  case class LiteralTokenImpl (identifier: Option[String], litType: String)
 
   sealed trait SemanticActionImpl
   case object Branch extends SemanticActionImpl
@@ -18,5 +18,5 @@ trait CLISyntaxRuleModule extends SyntaxRuleModule {
 
   def nonTerminalSymbol (name: String): Symbol = Symbol(NonTerminalImpl(name))
   def keywordSymbol (name: String): Symbol = Symbol(Terminal(Keyword(name)))
-  def literalTokenSymbol (identifier: String, litType: String): Symbol = Symbol(Terminal(LiteralTokenImpl(identifier, litType)))
+  def literalTokenSymbol (identifier: String, litType: String): Symbol = Symbol(Terminal(LiteralTokenImpl(Some(identifier), litType)))
 }

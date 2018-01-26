@@ -26,7 +26,7 @@ trait CodeGeneratorModule {
 
     def generateUniqueName: String
 
-    def literalIdentifier (lit: LiteralToken): String
+    def literalIdentifier (lit: LiteralToken): Option[String]
 
     def simpleType (typeName: String): Type
     def objectType (objectName: String): Type
@@ -106,11 +106,11 @@ trait CodeGeneratorModule {
     /**
       * リテラルを表現するDSL関数の定義
       */
-    lazy val literalDSLDefinitions: List[MemberDef] = automaton.syntax.literals.toList.map { literal =>
-      functionDef(literalIdentifier(literal),
-                  Nil,
-                  List(parameter("value", literalType(literal))),
-                  Nil,
+    lazy val literalDSLDefinitions: List[MemberDef] = for {
+      literal <- automaton.syntax.literals.toList
+      id <- literalIdentifier(literal)
+    } yield {
+      functionDef(id, Nil, List(parameter("value", literalType(literal))), Nil,
                   tokenListType(literalTokenTypes(literal)),
                   singleTokenListObj(literalTokenTypes(literal), constructLiteralObj(literalType(literal), objectRef("value"))))
     }
@@ -159,11 +159,14 @@ trait CodeGeneratorModule {
     /**
       * DSL のリテラルによる遷移を表現する関数の定義
       */
-    lazy val literalTransitionDefinitions: List[MemberDef] = automaton.syntax.literals.toList.map { lit =>
+    lazy val literalTransitionDefinitions: List[MemberDef] = for {
+      lit <- automaton.syntax.literals.toList
+      id  <- literalIdentifier(lit)
+    } yield {
       val methodBody = objectRef("transition").callTransit(objectRef("node"), constructLiteralObj(literalType(lit), objectRef("value")))
       implicitClassDef(typeParameters("N1", "N2"), parameter("node", simpleType("N1")),
                        List(parameter("transition", transitionType(literalTokenTypes(lit), simpleType("N1"), simpleType("N2")))),
-                       List(functionDef(literalIdentifier(lit), Nil, List(parameter("value", literalType(lit))), Nil, simpleType("N2"), methodBody)))
+                       List(functionDef(id, Nil, List(parameter("value", literalType(lit))), Nil, simpleType("N2"), methodBody)))
     }
 
     /**

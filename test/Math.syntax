@@ -2,7 +2,7 @@
 syntax com.phenan.arith.MathDSL (program) {
   program = stmts | stmt    ;
   stmts = stmt program      ;
-  stmt = expr "end"         ;
+  stmt = expr               ;
   expr = add | sub | term   ;
   add = expr "+" term       ;
   sub = expr "-" term       ;
@@ -11,5 +11,5 @@ syntax com.phenan.arith.MathDSL (program) {
   div = term "/" factor     ;
   factor = paren | num      ; 
   paren = "(" expr ")"      ;
-  num = int                 ; 
+  num = (Int)               ;
 }

@@ -24,5 +24,9 @@ package object scalalr {
 
   implicit def literal [T] (value: T): TokenListCons[Literal[T], TokenListSentinel] = singleToken(Literal(value))
 
+  implicit class LiteralTransition [N1, N2] (node: N1) {
+    def literal [T](value: T)(implicit transition: Transition[Literal[T], N1, N2]): N2 = transition.transit(node, Literal[T](value))
+  }
+
   def $$semicolon : TokenListCons[EoI.type, TokenListSentinel] = singleToken(EoI)
 }
