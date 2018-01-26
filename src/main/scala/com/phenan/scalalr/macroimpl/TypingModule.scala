@@ -32,7 +32,9 @@ trait TypingModule {
         SimpleType(resolveTypeConstructor(other, 0))
     }
 
-    def resolveTypeConstructor (tree: Tree, argNum: Int): GenericClass = tree match {
+    def check (name: TypeName): GenericType = SimpleType(resolveTypeConstructor(Ident(name), 0))
+
+    private def resolveTypeConstructor (tree: Tree, argNum: Int): GenericClass = tree match {
       case Ident(name : TypeName) if classNames.contains(name) =>
         DSLClass(outerName, name)
       case Select(Ident(outer), (name : TypeName)) if outer == outerName && classNames.contains(name) =>
