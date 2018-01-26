@@ -7,8 +7,8 @@ import java.io._
 import scala.util.Random
 import scala.{Console => Stdio}
 
-trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
-  this: ASTDataTypeWriterModule with CLISyntaxRuleModule with LALRAutomatonModule =>
+trait ScalaCodeGeneratorModule {
+  this: ASTDataTypeWriterModule with CodeGeneratorModule with CLISyntaxRuleModule with SyntaxRuleModule with LALRAutomatonModule =>
 
   def printGeneratedCode (syntax: SyntaxRule): Unit = {
     val gen = CodeGenerator(LALRAutomaton(syntax))

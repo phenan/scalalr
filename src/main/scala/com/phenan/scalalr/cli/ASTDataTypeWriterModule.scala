@@ -8,7 +8,7 @@ import java.io._
 import shapeless._
 
 trait ASTDataTypeWriterModule {
-  this: CodeGeneratorModule with CLISyntaxRuleModule =>
+  this: CodeGeneratorModule with CLISyntaxRuleModule with SyntaxRuleModule =>
 
   import output._
 

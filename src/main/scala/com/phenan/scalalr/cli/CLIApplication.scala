@@ -6,7 +6,8 @@ import shared._
 import scala.{Console => Stdio}
 
 object CLIApplication extends CLIOptionParserModule with SyntaxFileParserModule
-  with CLISyntaxRuleModule with LALRAutomatonModule with ScalaCodeGeneratorModule with ASTDataTypeWriterModule
+  with CLISyntaxRuleModule with SyntaxRuleModule with LALRAutomatonModule
+  with ScalaCodeGeneratorModule with CodeGeneratorModule with ASTDataTypeWriterModule
 {
   def applicationMain (args: Array[String]): Unit = optionParser.parse(args, Config()) match {
     case Some(config) if config.syntaxFile != null => run(config)

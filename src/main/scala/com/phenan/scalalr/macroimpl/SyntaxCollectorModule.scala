@@ -1,17 +1,12 @@
 package com.phenan.scalalr
 package macroimpl
 
-import shared.SyntaxRuleModule
+import shared._
 
 import java.util.regex.Pattern
 
 trait SyntaxCollectorModule {
-  this: SyntaxRuleModule with TypingModule with AnnotationFinderModule with MacroModule =>
-
-  case class NonTerminalImpl (ntType: GenericType)
-
-  override type NonTerminal = NonTerminalImpl
-  //override type LiteralToken = this.type
+  this: MacroSyntaxRuleModule with SyntaxRuleModule with TypingModule with AnnotationFinderModule with MacroModule =>
 
   import c.universe._
   import Flag._
@@ -33,23 +28,25 @@ trait SyntaxCollectorModule {
     }
   }
 
-  private def collectRules (body: List[Tree], typeChecker: TypeChecker): List[Rule] = ??? /*collectRules(body, typeChecker, Nil, Nil)
+  private def collectRules (body: List[Tree], typeChecker: TypeChecker): List[Rule] = collectRules(body, typeChecker, Nil)
 
-  private def collectRules (body: List[Tree], typeChecker: TypeChecker, derivations: List[DerivationRule], branches: List[(NonTerminal, NonTerminal)]): List[Rule] = {
+  private def collectRules (body: List[Tree], typeChecker: TypeChecker, rules: List[Rule]): List[Rule] = {
     body match {
       case ClassDef (mod, name, Nil, Template(parents, _, _)) :: rest if mod.hasFlag(CASE) =>
         val nt = NonTerminalImpl(typeChecker.check(name))
-        val (newDerivations, newBranches) = findAnnotation("syntax", mod).foldLeft [(List[DerivationRule], List[(NonTerminal, NonTerminal)])] ((derivations, branches)) {
-          case ((ds, bs), List(Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("g")), args))) =>
-            ( ???, bs ++ parents.map(p => nt -> NonTerminalImpl(typeChecker.check(p))) :+ ??? )
-          case ((ds, bs), Nil) =>
-            ( ds, bs ++ parents.map(p => nt -> NonTerminalImpl(typeChecker.check(p))) )
-          case ((ds, bs), other) =>
+        val collectedRules = findAnnotation("syntax", mod).foldLeft [List[Rule]] (rules) {
+          case (rs, List(Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("g")), args))) =>
+            ???
+            //( ???, bs ++ parents.map(p => nt -> NonTerminalImpl(typeChecker.check(p))) :+ ??? )
+          case (rs, Nil) =>
+            ???
+          //( ds, bs ++ parents.map(p => nt -> NonTerminalImpl(typeChecker.check(p))) )
+          case (rs, other) =>
             c.abort(body.head.pos, s"""@syntax only supports g"..." for describing syntax: $other""")
         }
-        collectRules(rest, typeChecker, newDerivations, newBranches)
+        collectRules(rest, typeChecker, collectedRules)
       case Nil =>
         ???
     }
-  }*/
+  }
 }
