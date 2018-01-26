@@ -2,18 +2,18 @@ package com.phenan.scalalr
 package cli
 
 import shared._
-
 import java.io._
 
 import scala.util.Random
+import scala.{Console => Stdio}
 
 trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
-  this: CLISyntaxRuleModule with LALRAutomatonModule =>
+  this: ASTDataTypeWriterModule with CLISyntaxRuleModule with LALRAutomatonModule =>
 
   def printGeneratedCode (syntax: SyntaxRule): Unit = {
     val gen = CodeGenerator(LALRAutomaton(syntax))
     println("/***********************/")
-    println(gen.generateCode(gen.astDataTypeDefinitions))
+    writeASTDataType(syntax, new PrintWriter(Stdio.out))
     println("\n/***********************/\n")
     println(gen.generateCode(gen.program))
   }
@@ -26,12 +26,8 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
     parent.mkdirs()
 
     val gen = CodeGenerator(LALRAutomaton(syntax))
-    val writer1 = new BufferedWriter(new FileWriter(astFile))
-    if (syntax.qualifiedName.init.nonEmpty) {
-      writer1.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
-      writer1.newLine()
-    }
-    writer1.write(gen.generateCode(gen.astDataTypeDefinitions))
+    val writer1 = new PrintWriter(astFile)
+    writeASTDataType(syntax, writer1)
     writer1.close()
 
     val writer2 = new BufferedWriter(new FileWriter(dslFile))
@@ -42,7 +38,6 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
     writer2.write(gen.generateCode(gen.program))
     writer2.close()
   }
-
 
   override type GeneratedCode = String
 
@@ -75,7 +70,7 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
     def simpleType (typeName: String): Type = typeName
     def objectType (objectName: String): Type = objectName + ".type"
     def nonTerminalType (nt: NonTerminal): Type = nt.name
-    def literalType (lit: LiteralToken): Type = lit.litType
+    def literalType (lit: LiteralToken): String = lit.litType
 
     def tuple2Type (v1: Type, v2: Type): Type = s"($v1, $v2)"
     def functionType (left: Type, right: Type): Type = s"$left => $right"
@@ -91,18 +86,12 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
       s"${s.newLine}object $moduleName {${members.map(_(s.indent)).mkString}${s.newLine}}"
     }
 
-    def branchDataTypeDef (nt: NonTerminal, superType: Option[NonTerminal]): MemberDef = s => superType match {
-      case Some(sup) => s"${s.newLine}sealed trait ${nt.name} extends ${sup.name}"
-      case None      => s"${s.newLine}sealed trait ${nt.name}"
+    def sealedTraitDef (name: String, superType: Option[Type]): MemberDef = s => {
+      s"${s.newLine}sealed trait $name${extendsClause(superType)}"
     }
 
-    def derivationDateTypeDef (nt: NonTerminal, params: List[Parameter], superType: Option[NonTerminal]): MemberDef = s => superType match {
-      case Some(sup) => s"${s.newLine}case class ${nt.name}${parameters(params)} extends ${sup.name}"
-      case None      => s"${s.newLine}case class ${nt.name}${parameters(params)}"
-    }
-
-    def caseClassDef (name: String, typeParams: List[TypeParameter], params: List[Parameter]): MemberDef = s => {
-      s"${s.newLine}case class $name ${typeParameters(typeParams)} ${parameters(params)}"
+    def caseClassDef (name: String, typeParams: List[TypeParameter], params: List[Parameter], superType: Option[Type]): MemberDef = s => {
+      s"${s.newLine}case class $name ${typeParameters(typeParams)} ${parameters(params)}${extendsClause(superType)}"
     }
 
     def caseObjectDef (name: String): MemberDef = s => s"${s.newLine}case object $name"
@@ -129,6 +118,11 @@ trait ScalaCodeGeneratorModule extends CodeGeneratorModule {
 
     def constructAST (nonTerminal: NonTerminal, args: List[Expr]): Expr = s => {
       s"${nonTerminal.name}${arguments(args)(s)}"
+    }
+
+    private def extendsClause (superType: Option[Type]): String = superType match {
+      case Some(t) => s" extends $t"
+      case None    => ""
     }
 
     private def typeParameters (typeParams: List[TypeParameter]): String = {

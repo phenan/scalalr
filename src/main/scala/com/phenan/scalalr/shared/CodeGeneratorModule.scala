@@ -50,10 +50,9 @@ trait CodeGeneratorModule {
 
     def moduleDefinition (moduleName: String, members: List[MemberDef]): MemberDef
 
-    def branchDataTypeDef (nt: NonTerminal, superType: Option[NonTerminal]): MemberDef
-    def derivationDateTypeDef (nt: NonTerminal, params: List[Parameter], superType: Option[NonTerminal]): MemberDef
+    def sealedTraitDef (name: String, superType: Option[Type]): MemberDef
 
-    def caseClassDef (name: String, typeParams: List[TypeParameter], params: List[Parameter]): MemberDef
+    def caseClassDef (name: String, typeParams: List[TypeParameter], params: List[Parameter], superType: Option[Type]): MemberDef
     def caseObjectDef (name: String): MemberDef
 
     def lazyValDef (name: String, valType: Type, value: Expr): MemberDef
@@ -85,33 +84,15 @@ trait CodeGeneratorModule {
       shiftImplicitDefinitions ++ reduceImplicitDefinitions ++ acceptImplicitDefinitions
     )
 
-    lazy val astDataTypeDefinitions: List[MemberDef] = automaton.syntax.nonTerminals.toList.flatMap { nt =>
-      automaton.syntax.rules.find(_.left == nt).map {
-        case BranchRule(_, _)         => branchDataTypeDef(nt, findSuperType(nt))
-        case DerivationRule(_, right) => derivationDateTypeDef(nt, collectDerivationDataParameters(right), findSuperType(nt))
-      }
-    }
-
-    private def findSuperType (nt: NonTerminal): Option[NonTerminal] = automaton.syntax.rules.collectFirst {
-      case BranchRule(left, right) if right.contains(nt) => left
-    }
-
-    private def collectDerivationDataParameters (right: List[Symbol]): List[Parameter] = right.collect {
-      case Inl(nt)            => nonTerminalType(nt)
-      case Inr(Inl(Inl(lit))) => literalType(lit)
-    }.zipWithIndex.map {
-      case (t, n) => parameter(s"arg$n", t)
-    }
-
     /**
       * LALR オートマトンの各ノードを表現するデータ型の定義を出力する関数
       */
     lazy val nodeClassDefinitions: List[MemberDef] = automaton.nodes.toList.map { node =>
       if (automaton.start == node) caseObjectDef(nodeName(node))
       else automaton.state(node) match {
-        case Inl(nt)            => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX")), parameter("value", nonTerminalType(nt))))
-        case Inr(Inl(Inl(lit))) => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX")), parameter("value", literalType(lit))))
-        case _                  => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX"))))
+        case Inl(nt)            => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX")), parameter("value", nonTerminalType(nt))), None)
+        case Inr(Inl(Inl(lit))) => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX")), parameter("value", literalType(lit))), None)
+        case _                  => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX"))), None)
       }
     }
 
