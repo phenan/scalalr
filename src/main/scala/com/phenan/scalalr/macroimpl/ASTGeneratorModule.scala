@@ -12,7 +12,9 @@ trait ASTGeneratorModule {
 
   override type GeneratedCode = List[Tree]
 
-  trait ASTOutput extends Output {
+  override val output: ASTOutput.type = ASTOutput
+
+  object ASTOutput extends Output {
     override type Type = Tree
     override type Parameter = ValDef
     override type TypeParameter = TypeDef
