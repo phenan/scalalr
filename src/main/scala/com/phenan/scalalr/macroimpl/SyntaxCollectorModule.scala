@@ -41,25 +41,27 @@ trait SyntaxCollectorModule {
       * @return 文法規則
       */
     private def syntaxRules (body: List[Tree]): List[Rule] = {
-      val rules = body.flatMap {
+      val rules = removeVerboseRules(body.flatMap {
         case moduleDef: ModuleDef => objectRules(moduleDef)
         case fieldDef : ValDef    => fieldRules(fieldDef)
         case classDef : ClassDef  => classRules(classDef)
         case funDef   : DefDef    => functionRules(funDef)
         case _                    => Nil
-      }
+      })
       val nonTerminals = collectNonTerminals(rules)
-      removeVerboseRules(rules ++ literalRules(nonTerminals), nonTerminals)
+      rules ++ literalRules(nonTerminals)
     }
 
     /**
       * 冗長な文法規則を削除する関数
       * @param rules 文法規則
-      * @param nonTerminals 非終端記号の集合
       * @return 与えられた非終端記号または開始記号を左辺とするような文法規則のリスト
       */
-    private def removeVerboseRules (rules: List[Rule], nonTerminals: Set[NonTerminal]): List[Rule] = {
-      rules.filter(rule => nonTerminals.contains(rule.left) || rule.left == start)
+    private def removeVerboseRules (rules: List[Rule]): List[Rule] = {
+      val nonTerminals = collectNonTerminals(rules)
+      val newRules = rules.filter(rule => nonTerminals.contains(rule.left) || rule.left == start)
+      if (rules != newRules) removeVerboseRules(newRules)
+      else rules
     }
 
     /**

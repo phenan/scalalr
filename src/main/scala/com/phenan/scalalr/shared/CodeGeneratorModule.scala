@@ -193,23 +193,20 @@ trait CodeGeneratorModule {
     /**
       * Reduce 操作を表す implicit value の定義
       */
-    lazy val reduceImplicitDefinitions: List[MemberDef] = automaton.reduce.toList.flatMap {
-      case (from, (rule, lookahead)) => for {
-        path <- reducePath(from, rule)
-        la   <- lookahead
-        dest <- automaton.goTo(path.head).get(rule.left)
-      } yield reduceImplicitDefinition(rule, path, dest, la)
-    }
+    lazy val reduceImplicitDefinitions: List[MemberDef] = for {
+      (from, (rule, lookahead)) <- automaton.reduce.toList
+      path <- reducePath(from, rule)
+      la   <- lookahead
+      dest <- automaton.goTo(path.head).get(rule.left)
+    } yield reduceImplicitDefinition(rule, path, dest, la)
 
     /**
       * 終了処理を表す implicit value の定義
       */
-    lazy val acceptImplicitDefinitions: List[MemberDef] = automaton.accept.toList.map { node =>
-      val fromType = parameterizedType(nodeName(node), simpleTypes("NX"))
-      implicitFunctionDef(typeParameters("NX"), Nil, Nil,
-                          acceptType(fromType, nonTerminalType(automaton.syntax.start)),
-                          constructAcceptObj(fromType, nonTerminalType(automaton.syntax.start), lambda(List(parameter("s", fromType)), fieldRef(objectRef("s"), "value"))))
-    }
+    lazy val acceptImplicitDefinitions: List[MemberDef] = for {
+      (node, rule) <- automaton.accept.toList
+      path         <- reducePath(node, rule)
+    } yield acceptImplicitDefinition(rule, path)
 
     /**
       * Reduce による巻き戻りの道のりを求める関数
@@ -244,6 +241,26 @@ trait CodeGeneratorModule {
 
       implicitFunctionDef(typeParams, Nil, Nil, reduceType(terminalType(lookahead), fromType, toType),
                           constructReduceObj(terminalType(lookahead), fromType, toType, bodyLambda))
+    }
+
+    private def acceptImplicitDefinition (rule: Rule, path: List[LRClosure]): MemberDef = {
+      val (typeParams, baseType) =
+        if (automaton.start == path.head) (Nil, startNodeType)
+        else (typeParameters("NX"), parameterizedType(nodeName(path.head), simpleTypes("NX")))
+
+      val fromType = path.tail.foldLeft(baseType) { (arg, node) => parameterizedType(nodeName(node), List(arg)) }
+
+      val astElements = path.tail.foldRight[(Expr, List[Expr])]((objectRef("s"), Nil)) { case (node, (cur, args)) =>
+        automaton.state(node) match {
+          case Inl(_) | Inr(Inl(Inl(_))) => (fieldRef(cur, "prev"), fieldRef(cur, "value") :: args)    // 有意な引数
+          case _                         => (fieldRef(cur, "prev"), args)                              // キーワード等は値に意味がない
+        }
+      }._2
+
+      val bodyLambda = lambda(List(parameter("s", fromType)), constructAST(rule, astElements))
+
+      implicitFunctionDef(typeParams, Nil, Nil, acceptType(fromType, nonTerminalType(automaton.syntax.start)),
+                          constructAcceptObj(fromType, nonTerminalType(automaton.syntax.start), bodyLambda))
     }
 
     /**

@@ -62,8 +62,8 @@ trait ASTGeneratorModule {
     }
 
     def implicitFunctionDef (typeParams: List[TypeParameter], parameters: List[Parameter], implicitParams: List[Parameter], returnType: Type, body: Expr): MemberDef = {
-      if (parameters.isEmpty) q"def ${TermName(generateUniqueName)} [..$typeParams] (implicit ..$implicitParams): $returnType = $body"
-      else q"def ${TermName(generateUniqueName)} [..$typeParams] (..$parameters)(implicit ..$implicitParams): $returnType = $body"
+      if (parameters.isEmpty) q"implicit def ${TermName(generateUniqueName)} [..$typeParams] (implicit ..$implicitParams): $returnType = $body"
+      else q"implicit def ${TermName(generateUniqueName)} [..$typeParams] (..$parameters)(implicit ..$implicitParams): $returnType = $body"
     }
 
     def implicitClassDef (typeParams: List[TypeParameter], parameter: Parameter, implicitParams: List[Parameter], members: List[MemberDef]): MemberDef = {

@@ -54,11 +54,11 @@ trait LALRAutomatonModule {
     /**
       * accept: 終了状態となるような LR closure
       */
-    lazy val accept: Set[LRClosure] = nodes.filter {
-      _.items.exists { case (item, lookahead) =>
-        item.rule.left == syntax.start && item.rest.isEmpty && lookahead.contains(Terminal.eoi)
+    lazy val accept: Map[LRClosure, Rule] = nodes.flatMap { node =>
+      node.items.collectFirst {
+        case (item, lookahead) if item.rule.left == syntax.start && item.rest.isEmpty && lookahead.contains(Terminal.eoi) => node -> item.rule
       }
-    }
+    } (breakOut)
 
     /**
       * state: LR closure の持つ状態
