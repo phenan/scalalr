@@ -48,8 +48,6 @@ trait CodeGeneratorModule {
 
     def typeParameters (names: String*): List[TypeParameter] = names.map(typeParameter).toList
 
-    def moduleDefinition (moduleName: String, members: List[MemberDef]): MemberDef
-
     def sealedTraitDef (name: String, superType: Option[Type]): MemberDef
 
     def caseClassDef (name: String, typeParams: List[TypeParameter], params: List[Parameter], superType: Option[Type]): MemberDef
@@ -77,12 +75,12 @@ trait CodeGeneratorModule {
     def generateCode (module: MemberDef): GeneratedCode = generateProgram(List(module))
     def generateCode (modules: List[MemberDef]): GeneratedCode = generateProgram(modules)
 
-    lazy val program: MemberDef = moduleDefinition ( automaton.syntax.name,
+    lazy val generatedDefinitions: List[MemberDef] = {
       nodeClassDefinitions ++ keywordObjectDefinitions ++ literalDSLDefinitions ++
       keywordDSLDefinitions ++ keywordTransitionDefinitions ++
       literalTransitionDefinitions ++
       shiftImplicitDefinitions ++ reduceImplicitDefinitions ++ acceptImplicitDefinitions
-    )
+    }
 
     /**
       * LALR オートマトンの各ノードを表現するデータ型の定義を出力する関数

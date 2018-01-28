@@ -28,7 +28,7 @@ trait AnnotationFinderModule {
 
     private def unapplyHelper (tree: Tree, anns: List[List[Tree]]): Option[(List[List[Tree]], Tree)] = tree match {
       case Annotated(AnnotationTree("syntax", args), t) => unapplyHelper(t, anns :+ args)
-      case t => Some(anns, t)
+      case t => Some(anns -> t)
     }
   }
 }

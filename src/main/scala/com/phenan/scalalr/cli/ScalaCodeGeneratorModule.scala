@@ -10,38 +10,39 @@ import scala.{Console => Stdio}
 trait ScalaCodeGeneratorModule {
   this: ASTDataTypeWriterModule with CodeGeneratorModule with CLISyntaxRuleModule with SyntaxRuleModule with LALRAutomatonModule =>
 
-  def printGeneratedCode (syntax: SyntaxRule): Unit = {
-    val gen = CodeGenerator(LALRAutomaton(syntax))
-    println("/***********************/")
-    writeASTDataType(syntax, new PrintWriter(Stdio.out))
-    println("\n/***********************/\n")
-    println(gen.generateCode(gen.program))
+  def printGeneratedCode (qualifiedName: List[String], syntax: SyntaxRule): Unit = {
+    val writer = new PrintWriter(Stdio.out)
+    writeASTDataType(syntax, writer)
+    writeGeneratedDefinitions(qualifiedName, syntax, writer)
   }
 
-  def writeGeneratedCode (syntax: SyntaxRule, directory: Option[File]): Unit = {
+  def writeGeneratedCode (qualifiedName: List[String], syntax: SyntaxRule, directory: Option[File]): Unit = {
     val dir = directory.getOrElse(new File("."))
     val dslFile = new File(dir, syntax.qualifiedName.mkString("/") + ".scala")
     val parent = dslFile.getParentFile
     val astFile = new File(parent, "ASTs.scala")
     parent.mkdirs()
 
-    val gen = CodeGenerator(LALRAutomaton(syntax))
     val writer1 = new PrintWriter(astFile)
     writeASTDataType(syntax, writer1)
     writer1.close()
 
-    val writer2 = new BufferedWriter(new FileWriter(dslFile))
-    if (syntax.qualifiedName.init.nonEmpty) {
-      writer2.write(s"package ${syntax.qualifiedName.init.mkString(".")}")
-      writer2.newLine()
-    }
-    writer2.write(gen.generateCode(gen.program))
+    val writer2 = new PrintWriter(dslFile)
+    writeGeneratedDefinitions(qualifiedName, syntax, writer2)
     writer2.close()
+  }
+
+  def writeGeneratedDefinitions (qualifiedName: List[String], syntax: SyntaxRule, writer: PrintWriter): Unit = {
+    val gen = CodeGenerator(LALRAutomaton(syntax))
+    if (qualifiedName.lengthCompare(1) > 0) {
+      writer.println(s"package ${qualifiedName.init.mkString(".")}")
+    }
+    writer.println(gen.generateCode(output.moduleDefinition(qualifiedName.last, gen.generatedDefinitions)))
   }
 
   override type GeneratedCode = String
 
-  override val output: Output = StringOutput
+  override val output: StringOutput.type = StringOutput
 
   object StringOutput extends Output {
     case class OutputState (indentLevel: Int) {

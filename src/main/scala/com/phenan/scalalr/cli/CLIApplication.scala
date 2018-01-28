@@ -17,8 +17,8 @@ object CLIApplication extends CLIOptionParserModule with SyntaxFileParserModule
   def run (config: Config): Unit = {
     SyntaxParsers.runParser(config.syntaxFile) match {
       case Right(syntax) =>
-        if (config.printFlag) printGeneratedCode(syntax)
-        else writeGeneratedCode(syntax, config.directory)
+        if (config.printFlag) printGeneratedCode(syntax.qualifiedName, syntax)
+        else writeGeneratedCode(syntax.qualifiedName, syntax, config.directory)
       case Left(msg) =>
         Stdio.err.println(s"invalid syntax file : ${config.syntaxFile}\n  $msg")
     }
