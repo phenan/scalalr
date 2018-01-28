@@ -13,9 +13,11 @@ import scala.util.parsing.combinator.JavaTokenParsers
 trait SyntaxFileParserModule {
   this: CLISyntaxRuleModule with SyntaxRuleModule =>
 
+  case class SyntaxDefinition (qualifiedName: List[String], syntax: SyntaxRule)
+
   object SyntaxParsers extends JavaTokenParsers {
 
-    def runParser (file: File): Either[String, SyntaxRule] = {
+    def runParser (file: File): Either[String, SyntaxDefinition] = {
       val reader = new BufferedReader(new FileReader(file))
       val parseResult = parseAll(syntax, reader)
       reader.close()
@@ -25,8 +27,8 @@ trait SyntaxFileParserModule {
       }
     }
 
-    def syntax: Parser[SyntaxRule] = "syntax" ~> rep1sep(ident, ".") ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
-      case name ~ start ~ rules => SyntaxRule(name, start, rules.flatten)
+    def syntax: Parser[SyntaxDefinition] = "syntax" ~> rep1sep(ident, ".") ~ ("(" ~> nonTerminal <~ ")" ) ~ ("{" ~> rule.* <~ "}" ) ^^ {
+      case name ~ start ~ rules => SyntaxDefinition(name, SyntaxRule(start, rules.flatten))
     }
 
     def rule: Parser[List[Rule]] = branch | derivation

@@ -12,19 +12,19 @@ trait ScalaCodeGeneratorModule {
 
   def printGeneratedCode (qualifiedName: List[String], syntax: SyntaxRule): Unit = {
     val writer = new PrintWriter(Stdio.out)
-    writeASTDataType(syntax, writer)
+    writeASTDataType(qualifiedName, syntax, writer)
     writeGeneratedDefinitions(qualifiedName, syntax, writer)
   }
 
   def writeGeneratedCode (qualifiedName: List[String], syntax: SyntaxRule, directory: Option[File]): Unit = {
     val dir = directory.getOrElse(new File("."))
-    val dslFile = new File(dir, syntax.qualifiedName.mkString("/") + ".scala")
+    val dslFile = new File(dir, qualifiedName.mkString("/") + ".scala")
     val parent = dslFile.getParentFile
     val astFile = new File(parent, "ASTs.scala")
     parent.mkdirs()
 
     val writer1 = new PrintWriter(astFile)
-    writeASTDataType(syntax, writer1)
+    writeASTDataType(qualifiedName, syntax, writer1)
     writer1.close()
 
     val writer2 = new PrintWriter(dslFile)

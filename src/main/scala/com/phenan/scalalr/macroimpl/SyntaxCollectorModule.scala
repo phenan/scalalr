@@ -2,7 +2,6 @@ package com.phenan.scalalr
 package macroimpl
 
 import shared._
-import java.util.regex.Pattern
 
 import shapeless.Inl
 
@@ -19,8 +18,8 @@ trait SyntaxCollectorModule {
       * dslアノテーションで指定されたobject定義の文法
       */
     def syntax: SyntaxRule = tree match {
-      case ModuleDef (_, name, Template(_, _, body)) =>
-        SyntaxRule(packageName.split(Pattern.quote(".")).toList :+ name.toString, start, syntaxRules(body))
+      case ModuleDef (_, _, Template(_, _, body)) =>
+        SyntaxRule(start, syntaxRules(body))
       case other =>
         c.abort(tree.pos, s"@dsl can be annotated to object: $other")
     }

@@ -12,9 +12,9 @@ trait ASTDataTypeWriterModule {
 
   import output._
 
-  def writeASTDataType (syntax: SyntaxRule, writer: PrintWriter): Unit = {
-    if (syntax.qualifiedName.init.nonEmpty) {
-      writer.println(s"package ${syntax.qualifiedName.init.mkString(".")}")
+  def writeASTDataType (qualifiedName: List[String], syntax: SyntaxRule, writer: PrintWriter): Unit = {
+    if (qualifiedName.init.nonEmpty) {
+      writer.println(s"package ${qualifiedName.init.mkString(".")}")
     }
     writer.println(generateProgram(astDataTypeDefinitions(syntax)))
     writer.flush()

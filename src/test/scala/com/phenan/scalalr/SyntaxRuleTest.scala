@@ -31,8 +31,7 @@ class SyntaxRuleTest extends FunSuite with Matchers {
   }
 
 
-  def simpleSyntax = SyntaxRule(List("Simple"), NonTerminalImpl("S"),
-                                List(derivation_S_T, branch_T_M, branch_T_N, derivation_M_mul, derivation_N_int))
+  def simpleSyntax = SyntaxRule(NonTerminalImpl("S"), List(derivation_S_T, branch_T_M, branch_T_N, derivation_M_mul, derivation_N_int))
 
   private lazy val derivation_S_T: Rule = Rule(NonTerminalImpl("S"), List(nonTerminalSymbol("T")), Derivation)
   private lazy val branch_T_M: Rule = Rule(NonTerminalImpl("T"), List(nonTerminalSymbol("M")), Branch)
