@@ -195,7 +195,7 @@ trait SyntaxCollectorModule {
       * @param semantics 対応する関数呼び出しを表現する
       * @return syntaxアノテーションで表現された文法規則
       */
-    private def buildOperatorRules (mod: Modifiers, paramLists: List[List[ValDef]], returnType: Tree, semantics: Map[NonTerminal, (Int, Int)] => SemanticActionImpl): List[Rule] = {
+    private def buildOperatorRules (mod: Modifiers, paramLists: List[List[ValDef]], returnType: Tree, semantics: (List[Tree] => List[List[Tree]]) => SemanticActionImpl): List[Rule] = {
       val TypeWithSyntaxAnnotation(annotations, ret) = returnType
 
       ( findAnnotation("syntax", mod) ++ annotations ).flatten.map {
@@ -211,7 +211,7 @@ trait SyntaxCollectorModule {
       * @param semantics 対応する関数呼び出しを表現する
       * @return syntaxアノテーションに対応する文法規則
       */
-    private def buildRulesOfSyntaxAnnotation (syntaxAnnotation: Tree, paramLists: List[List[ValDef]], returnType: GenericType, semantics: Map[NonTerminal, (Int, Int)] => SemanticActionImpl): Rule = {
+    private def buildRulesOfSyntaxAnnotation (syntaxAnnotation: Tree, paramLists: List[List[ValDef]], returnType: GenericType, semantics: (List[Tree] => List[List[Tree]]) => SemanticActionImpl): Rule = {
       val (expr, paramIndexes) = buildSyntaxExpressionFromSyntaxAnnotation(syntaxAnnotation, paramLists)
       Rule(NonTerminalImpl(returnType), expr, semantics(paramIndexes))
     }
@@ -222,12 +222,12 @@ trait SyntaxCollectorModule {
       * @param paramLists 引数リストのリスト
       * @return (文法式, オペランドと引数の対応)
       */
-    private def buildSyntaxExpressionFromSyntaxAnnotation (syntaxAnnotation: Tree, paramLists: List[List[ValDef]]): (List[Symbol], Map[NonTerminal, (Int, Int)]) = {
+    private def buildSyntaxExpressionFromSyntaxAnnotation (syntaxAnnotation: Tree, paramLists: List[List[ValDef]]): (List[Symbol], List[Tree] => List[List[Tree]]) = {
       syntaxAnnotation match {
         case Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("g")), args) =>
           val operators = buildOperatorListFromStringContext(parts)
           val operands = resolveOperands(args, paramLists)
-          ( buildSyntaxExpression(operators, operands.map(_._1)), operands.toMap )
+          ( buildSyntaxExpression(operators, operands._1), operands._2 )
       }
     }
 
@@ -258,9 +258,9 @@ trait SyntaxCollectorModule {
       * オペランド名を解決する関数
       * @param operands オペランド名のリスト
       * @param paramLists 引数リストのリスト
-      * @return (非終端記号, (対応する引数リストのインデックス, 対応する引数のインデックス))
+      * @return (非終端記号, オペランド列を引数リストのリストに直す関数)
       */
-    private def resolveOperands (operands: List[Tree], paramLists: List[List[ValDef]]): List[(NonTerminal, (Int, Int))] = {
+    private def resolveOperands (operands: List[Tree], paramLists: List[List[ValDef]]): (List[NonTerminal], List[Tree] => List[List[Tree]]) = {
       val parameters = for {
         (paramList, index1)                              <- paramLists.zipWithIndex
         (ValDef(_, valName, valType, EmptyTree), index2) <- paramList.zipWithIndex
@@ -268,9 +268,14 @@ trait SyntaxCollectorModule {
 
       val parameterMap = parameters.toMap[Name, (NonTerminal, (Int, Int))]
 
-      operands.map {
-        case Ident(termName) => parameterMap(termName)
+      val nonTerminals = operands.map { case Ident(termName) => parameterMap(termName) }
+
+      // List[(Tree, (index1, index2))] を作り, index1 でグループ化してソートし, 更に各グループ内で index2 でソートする
+      val correspondence: List[Tree] => List[List[Tree]] = tree => {
+        tree.zip(nonTerminals.map(_._2)).groupBy(_._2._1).toList.sortBy(_._1).map(_._2.sortBy(_._2._2).map(_._1))
       }
+
+      (nonTerminals.map(_._1), correspondence)
     }
   }
 }

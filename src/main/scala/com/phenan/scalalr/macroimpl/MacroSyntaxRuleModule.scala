@@ -16,8 +16,8 @@ trait MacroSyntaxRuleModule {
   case object Inheritance extends SemanticActionImpl
   case object LiteralRef extends SemanticActionImpl
   case class ObjectRef (termName: TermName) extends SemanticActionImpl
-  case class ConstructorCall (typeName: TypeName, parameterIndexes: Map[NonTerminal, (Int, Int)]) extends SemanticActionImpl
-  case class FunctionCall (functionName: TermName, parameterIndexes: Map[NonTerminal, (Int, Int)]) extends SemanticActionImpl
+  case class ConstructorCall (typeName: TypeName, parameterCorrespondence: List[Tree] => List[List[Tree]]) extends SemanticActionImpl
+  case class FunctionCall (functionName: TermName, parameterCorrespondence: List[Tree] => List[List[Tree]]) extends SemanticActionImpl
 
   override type NonTerminal = NonTerminalImpl
   override type LiteralToken = LiteralTokenImpl

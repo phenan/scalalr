@@ -34,7 +34,6 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context) extends SyntaxCol
     case ClassDef (mod, name, typeParams, Template(parents, self, body)) =>
       ClassDef (mod, name, typeParams, Template(parents, self, translateDeclarationBody(name.toString, body)))
     case ModuleDef (mod, name, Template(parents, self, body)) =>
-      println(collectSyntax(tree))
       ModuleDef (mod, name, Template(parents, self, translateDeclarationBody(name.toString, body)))
     case other =>
       c.abort(tree.pos, s"@dsl can be annotated to class, trait, or object: $other")
