@@ -11,12 +11,19 @@ trait TypingModule {
 
   case class ParameterizedType (clazz: GenericClass, args: List[GenericType]) extends GenericType
 
+  case class SingletonType (objectRef: GenericObject) extends GenericType
+
   sealed trait GenericClass
 
   case class DSLClass (outerName: TermName, className: TypeName) extends GenericClass
 
   case class ScalaClass (typeConstructor: Type) extends GenericClass
 
+  sealed trait GenericObject
+
+  case class DSLObject (outerName: TermName, moduleName: TermName) extends GenericObject
+
+  case class ScalaObject (objectType: Type) extends GenericObject
 
   lazy val packageName: String = {
     val freshName = c.freshName("ScaLALR$")
@@ -28,6 +35,8 @@ trait TypingModule {
     def check (tree: Tree): GenericType = tree match {
       case AppliedTypeTree(typeConstructor, args) =>
         ParameterizedType(resolveTypeConstructor(typeConstructor, args.length), args.map(check))
+      case SingletonTypeTree(objectRef) =>
+        SingletonType(resolveSingleton(objectRef))
       case other =>
         SimpleType(resolveTypeConstructor(other, 0))
     }
@@ -41,8 +50,21 @@ trait TypingModule {
         DSLClass(outerName, name)
       case Select(outer, (name : TypeName)) if show(outer) == packageName + "." + outerName && classNames.contains(name) =>
         DSLClass(outerName, name)
-      case _ =>
+      case _ if argNum > 0 =>
         ScalaClass(c.typecheck(q"??? : $tree[..${(0 until argNum).map(_ => "_")}]").tpe.dealias.typeConstructor)
+      case _ =>
+        ScalaClass(c.typecheck(q"??? : $tree").tpe.dealias.typeConstructor)
+    }
+
+    private def resolveSingleton (tree: Tree): GenericObject = tree match {
+      case Ident(name: TermName) if moduleNames.contains(name) =>
+        DSLObject(outerName, name)
+      case Select(Ident(outer), (name : TermName)) if outer == outerName && moduleNames.contains(name) =>
+        DSLObject(outerName, name)
+      case Select(outer, (name : TermName)) if show(outer) == packageName + "." + outerName && moduleNames.contains(name) =>
+        DSLObject(outerName, name)
+      case _ =>
+        ScalaObject(c.typecheck(q"??? : $tree").tpe.dealias)
     }
   }
 

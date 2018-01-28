@@ -9,13 +9,17 @@ object Test {
   case class Foo (n: Int, m: Bar) extends Hoge
 
   @syntax(g"bar $s bar bar")
-  case class Bar (s: List[String]) extends Hoge
+  case class Bar (s: String) extends Hoge
 
   @syntax(g"baz")
   case object Baz extends Hoge
 
-  /*@syntax(g"foo $n bar $s")
-  def foo (n: Int, s: String): List[scala.Unit] @syntax(g"foo $n bar $s") = ???*/
+  //@syntax(g"foo $n bar $s")
+  //def foo (n: Int, s: String): List[scala.Unit] @syntax(g"foo $n bar $s") = ???
+
+  //val bar: Nil.type = Nil
+  //val baz: Test.Baz.type = Baz
+  //val hoge: Int = 0
 }
 
 /*@dsl[Unit]
