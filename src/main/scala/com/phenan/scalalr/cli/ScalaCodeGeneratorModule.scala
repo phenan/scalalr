@@ -5,32 +5,9 @@ import shared._
 import java.io._
 
 import scala.util.Random
-import scala.{Console => Stdio}
 
 trait ScalaCodeGeneratorModule {
   this: ASTDataTypeWriterModule with CodeGeneratorModule with CLISyntaxRuleModule with SyntaxRuleModule with LALRAutomatonModule =>
-
-  def printGeneratedCode (qualifiedName: List[String], syntax: SyntaxRule): Unit = {
-    val writer = new PrintWriter(Stdio.out)
-    writeASTDataType(qualifiedName, syntax, writer)
-    writeGeneratedDefinitions(qualifiedName, syntax, writer)
-  }
-
-  def writeGeneratedCode (qualifiedName: List[String], syntax: SyntaxRule, directory: Option[File]): Unit = {
-    val dir = directory.getOrElse(new File("."))
-    val dslFile = new File(dir, qualifiedName.mkString("/") + ".scala")
-    val parent = dslFile.getParentFile
-    val astFile = new File(parent, "ASTs.scala")
-    parent.mkdirs()
-
-    val writer1 = new PrintWriter(astFile)
-    writeASTDataType(qualifiedName, syntax, writer1)
-    writer1.close()
-
-    val writer2 = new PrintWriter(dslFile)
-    writeGeneratedDefinitions(qualifiedName, syntax, writer2)
-    writer2.close()
-  }
 
   def writeGeneratedDefinitions (qualifiedName: List[String], syntax: SyntaxRule, writer: PrintWriter): Unit = {
     val gen = CodeGenerator(LALRAutomaton(syntax))
