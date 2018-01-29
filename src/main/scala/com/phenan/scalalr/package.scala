@@ -5,9 +5,6 @@ import com.phenan.scalalr.internal._
 import scala.language.implicitConversions
 
 package object scalalr {
-  implicit class ScaLALRStringContext (sc: StringContext) {
-    def g (args: Any*): ScaLALRString = ScaLALRString(sc.parts, args)
-  }
 
   implicit class TokenListOps [T <: TokenList] (t: T) {
     def apply [U] (value: TokenListCons[Literal[U], TokenListSentinel]): TokenListCons[Literal[U], T] = TokenListCons(value.head, t)

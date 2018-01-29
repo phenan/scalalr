@@ -225,7 +225,7 @@ trait SyntaxCollectorModule {
       */
     private def buildSyntaxExpressionFromSyntaxAnnotation (syntaxAnnotation: Tree, paramLists: List[List[ValDef]]): (List[Symbol], List[Tree] => List[List[Tree]]) = {
       syntaxAnnotation match {
-        case Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("g")), args) =>
+        case Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("s")), args) =>
           val operators = buildOperatorListFromStringContext(parts)
           val operands = resolveOperands(args, paramLists)
           ( buildSyntaxExpression(operators, operands._1), operands._2 )
@@ -240,7 +240,7 @@ trait SyntaxCollectorModule {
     private def buildOperatorListFromStringContext (parts: List[Tree]): List[List[Keyword]] = parts.map {
       case Literal(Constant("")) => Nil
       case Literal(Constant(str: String)) => str.split(" ").filter(_ != "").map(Keyword).toList
-      case other => c.abort(other.pos, s"""@syntax only supports g"..." for describing syntax: $other""")
+      case other => c.abort(other.pos, s"""@syntax only supports s"..." for describing syntax: $other""")
     }
 
     /**

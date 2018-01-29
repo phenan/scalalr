@@ -5,26 +5,26 @@ object Test {
 
   sealed trait Expr
 
-  @syntax(g"$n + $m")
+  @syntax(s"$n + $m")
   case class Add (n: Expr, m: Term) extends Expr
 
-  @syntax(g"$n - $m")
+  @syntax(s"$n - $m")
   case class Sub (n: Expr, m: Term) extends Expr
 
   sealed trait Term extends Expr
 
-  @syntax(g"$n * $m")
+  @syntax(s"$n * $m")
   case class Mul (n: Term, m: Factor) extends Term
 
-  @syntax(g"$n / $m")
+  @syntax(s"$n / $m")
   case class Div (n: Term, m: Factor) extends Term
 
   sealed trait Factor extends Term
 
-  @syntax(g"$n")
+  @syntax(s"$n")
   case class Num (n: Int) extends Factor
 
-  @syntax(g"( $e )")
+  @syntax(s"( $e )")
   case class Paren (e: Expr) extends Factor
 
   def main (args: Array[String]): Unit = {
