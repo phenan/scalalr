@@ -1,7 +1,7 @@
 package com.phenan.scalalr
 
-@dsl[Test.Expr]
-object Test {
+@dsl[MathDSL.Expr]
+object MathDSL {
 
   sealed trait Expr
 
@@ -26,15 +26,4 @@ object Test {
 
   @syntax(s"( $e )")
   case class Paren (e: Expr) extends Factor
-
-  def main (args: Array[String]): Unit = {
-
-    val x: Expr = $$parenleft $$parenleft (1) $$plus (2) $$slash (3) $$parenright $$asterisk (4) $$parenright
-
-    println(x)
-
-    val y: Expr = $$parenleft $$parenleft (1) $$hyphen (Mul(Num(2), Num(2))) $$slash (3) $$parenright $$asterisk (4) $$parenright
-
-    println(y)
-  }
 }
