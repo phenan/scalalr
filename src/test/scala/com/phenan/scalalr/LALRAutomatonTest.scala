@@ -35,7 +35,7 @@ class LALRAutomatonTest extends FunSuite with Matchers {
     automaton.edges(node1)(keywordSymbol("mul")) shouldBe node2
   }
 
-  def simpleSyntax = SyntaxRule(NonTerminalImpl("S"), List(derivation_S_T, branch_T_M, branch_T_N, derivation_M_mul, derivation_N_int))
+  def simpleSyntax = Syntax(NonTerminalImpl("S"), List(derivation_S_T, branch_T_M, branch_T_N, derivation_M_mul, derivation_N_int))
 
   private lazy val derivation_S_T: Rule = Rule(NonTerminalImpl("S"), List(nonTerminalSymbol("T")), Derivation)
   private lazy val branch_T_M: Rule = Rule(NonTerminalImpl("T"), List(nonTerminalSymbol("M")), Branch)

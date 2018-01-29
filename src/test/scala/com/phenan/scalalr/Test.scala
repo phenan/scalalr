@@ -1,38 +1,40 @@
 package com.phenan.scalalr
 
-@dsl[Test.Foo]
+@dsl[Test.Expr]
 object Test {
-  @syntax
-  sealed trait Hoge
 
-  @syntax(g"foo $n with $m")
-  case class Foo (n: Int, m: Bar) extends Hoge
+  sealed trait Expr
 
-  @syntax(g"bar $s bar bar")
-  case class Bar (s: String) extends Hoge
+  @syntax(g"$n + $m")
+  case class Add (n: Expr, m: Term) extends Expr
 
-  @syntax(g"baz")
-  case object Baz extends Hoge
+  @syntax(g"$n - $m")
+  case class Sub (n: Expr, m: Term) extends Expr
 
-  //@syntax(g"foo $n bar $s")
-  //def foo (n: Int, s: String): List[scala.Unit] @syntax(g"foo $n bar $s") = ???
+  sealed trait Term extends Expr
 
-  //val bar: Nil.type = Nil
-  //val baz: Test.Baz.type = Baz
-  //val hoge: Int = 0
+  @syntax(g"$n * $m")
+  case class Mul (n: Term, m: Factor) extends Term
+
+  @syntax(g"$n / $m")
+  case class Div (n: Term, m: Factor) extends Term
+
+  sealed trait Factor extends Term
+
+  @syntax(g"$n")
+  case class Num (n: Int) extends Factor
+
+  @syntax(g"( $e )")
+  case class Paren (e: Expr) extends Factor
+
+  def main (args: Array[String]): Unit = {
+
+    val x: Expr = $$parenleft $$parenleft (1) $$plus (2) $$slash (3) $$parenright $$asterisk (4) $$parenright
+
+    println(x)
+
+    val y: Expr = $$parenleft $$parenleft (1) $$hyphen (Mul(Num(2), Num(2))) $$slash (3) $$parenright $$asterisk (4) $$parenright
+
+    println(y)
+  }
 }
-
-/*@dsl[Unit]
-object Test2 {
-  @syntax(g"foo $n bar $s")
-  def foo (n: Int, s: String): List[scala.Unit] @syntax(g"foo $n bar $s") = ???
-}*/
-
-
-
-
-
-
-
-
-

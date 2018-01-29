@@ -9,7 +9,7 @@ trait LALRAutomatonModule {
 
   import HList.ListCompat._
 
-  case class LALRAutomaton (syntax: SyntaxRule) {
+  case class LALRAutomaton (syntax: Syntax) {
 
     lazy val start: LRClosure = mappingLR1toLALR(lr1.start)
 
@@ -108,7 +108,7 @@ trait LALRAutomatonModule {
     private lazy val lr1 = LR1Automaton(syntax)
   }
 
-  case class LR1Automaton (syntax: SyntaxRule) {
+  case class LR1Automaton (syntax: Syntax) {
     /**
       * 最初の LR closure
       * LR オートマトンの開始地点となる。

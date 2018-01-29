@@ -9,7 +9,7 @@ import scala.util.Random
 trait ScalaCodeGeneratorModule {
   this: ASTDataTypeWriterModule with CodeGeneratorModule with CLISyntaxRuleModule with SyntaxRuleModule with LALRAutomatonModule =>
 
-  def writeGeneratedDefinitions (qualifiedName: List[String], syntax: SyntaxRule, writer: PrintWriter): Unit = {
+  def writeGeneratedDefinitions (qualifiedName: List[String], syntax: Syntax, writer: PrintWriter): Unit = {
     val gen = CodeGenerator(LALRAutomaton(syntax))
     if (qualifiedName.lengthCompare(1) > 0) {
       writer.println(s"package ${qualifiedName.init.mkString(".")}")

@@ -50,7 +50,7 @@ trait SyntaxRuleModule {
     * @param start 開始記号
     * @param rules 全ての文法規則
     */
-  case class SyntaxRule (start: NonTerminal, rules: List[Rule]) {
+  case class Syntax (start: NonTerminal, rules: List[Rule]) {
 
     /**
       * 文法規則一覧

@@ -26,13 +26,13 @@ object CLIApplication extends CLIOptionParserModule with SyntaxFileParserModule
     }
   }
 
-  private def printCode (qualifiedName: List[String], syntax: SyntaxRule): Unit = {
+  private def printCode (qualifiedName: List[String], syntax: Syntax): Unit = {
     val writer = new PrintWriter(Stdio.out)
     writeASTDataType(qualifiedName, syntax, writer)
     writeGeneratedDefinitions(qualifiedName, syntax, writer)
   }
 
-  private def writeCode (qualifiedName: List[String], syntax: SyntaxRule, directory: Option[File]): Unit = {
+  private def writeCode (qualifiedName: List[String], syntax: Syntax, directory: Option[File]): Unit = {
     val dir = directory.getOrElse(new File("."))
     val dslFile = new File(dir, qualifiedName.mkString("/") + ".scala")
     val parent = dslFile.getParentFile

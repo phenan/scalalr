@@ -10,16 +10,16 @@ trait SyntaxCollectorModule {
 
   import c.universe._
 
-  def collectSyntax (tree: Tree): SyntaxRule = new SyntaxCollector(tree).syntax
+  def collectSyntax (tree: Tree): Syntax = new SyntaxCollector(tree).syntax
 
   private class SyntaxCollector (tree: Tree) {
 
     /**
       * dslアノテーションで指定されたobject定義の文法
       */
-    def syntax: SyntaxRule = tree match {
+    def syntax: Syntax = tree match {
       case ModuleDef (_, _, Template(_, _, body)) =>
-        SyntaxRule(start, syntaxRules(body))
+        Syntax(start, syntaxRules(body))
       case other =>
         c.abort(tree.pos, s"@dsl can be annotated to object: $other")
     }
