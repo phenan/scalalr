@@ -2,6 +2,8 @@ organization := "com.phenan"
 
 name := "scalalr"
 
+licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+
 version := "2.0"
 
 scalaVersion := "2.12.4"
