@@ -2,7 +2,7 @@ organization := "com.phenan"
 
 name := "scalalr"
 
-version := "1.2"
+version := "2.0"
 
 scalaVersion := "2.12.4"
 

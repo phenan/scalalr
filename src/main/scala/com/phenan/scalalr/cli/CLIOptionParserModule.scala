@@ -11,7 +11,7 @@ trait CLIOptionParserModule {
    syntaxFile        : File = null)
 
   val optionParser: OptionParser[Config] = new OptionParser[Config] ("scalalr") {
-    head("ScaLALR", "1.2")
+    head("ScaLALR", com.phenan.scalalr.scaLALRVersion)
 
     opt[File] ('d', "directory").action((f, c) => c.copy(directory = Some(f)))
       .text("target file name to write the generated code out")

@@ -26,9 +26,7 @@ trait TypingModule {
   case class ScalaObject (objectType: Type) extends GenericObject
 
   lazy val packageName: String = {
-    val freshName = c.freshName("ScaLALR$")
-    val q"{ $attributedDef; () }" = c.typecheck(q"{ object ${TermName(freshName)}; () }")
-    attributedDef.symbol.owner.fullName
+    c.typecheck(q"object ${TermName(c.freshName("ScaLALR$"))}").symbol.owner.fullName
   }
 
   class TypeChecker (outerName: TermName, classNames: List[TypeName], moduleNames: List[TermName]) {

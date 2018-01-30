@@ -26,4 +26,6 @@ package object scalalr {
   }
 
   def $$semicolon : TokenListCons[EoI.type, TokenListSentinel] = singleToken(EoI)
+
+  val scaLALRVersion: String = "2.0"
 }
