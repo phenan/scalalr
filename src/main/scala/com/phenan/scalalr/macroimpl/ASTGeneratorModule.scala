@@ -118,12 +118,12 @@ trait ASTGeneratorModule {
 
     private def typeConstructor (clazz: GenericClass): Tree = clazz match {
       case DSLClass(outer, name) => tq"$outer.$name"
-      case ScalaClass(t) => stringToType(t.typeSymbol.fullName)              // 頭悪い方法な気がする
+      case ScalaClass(symbol)    => stringToType(symbol.fullName)            // 頭悪い方法な気がする
     }
 
     private def genericObject (obj: GenericObject): Tree = obj match {
       case DSLObject(outer, name) => q"$outer.$name"
-      case ScalaObject(t) => stringToQualifiedTerm(t.termSymbol.fullName)    // 頭悪い方法な気がする
+      case ScalaObject(symbol)    => stringToQualifiedTerm(symbol.fullName)  // 頭悪い方法な気がする
     }
   }
 }
