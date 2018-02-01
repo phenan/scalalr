@@ -1,25 +1,16 @@
-package com.phenan.scalalr
-package macroimpl
+package com.phenan.scalalr.macroimpl
 
-import shared._
-
-trait MacroSyntaxRuleModule {
-  this: TypingModule with SyntaxRuleModule with MacroModule =>
+trait SyntaxInfoModule {
+  this: MacroModule =>
 
   import c.universe._
 
-  case class NonTerminalImpl (ntType: GenericType)
-  case class LiteralTokenImpl (literalType: GenericType)
-
   sealed trait SemanticActionImpl
-
   case object Inheritance extends SemanticActionImpl
   case object LiteralRef extends SemanticActionImpl
   case class ObjectRef (termName: TermName) extends SemanticActionImpl
   case class ConstructorCall (typeName: TypeName, parameterCorrespondence: List[Tree] => List[List[Tree]]) extends SemanticActionImpl
   case class FunctionCall (functionName: TermName, parameterCorrespondence: List[Tree] => List[List[Tree]]) extends SemanticActionImpl
 
-  override type NonTerminal = NonTerminalImpl
-  override type LiteralToken = LiteralTokenImpl
-  override type SemanticAction = SemanticActionImpl
+  case class SyntaxInfo (returnType: Tree, operators: List[List[String]], operandTypes: List[Tree], semantics: SemanticActionImpl)
 }

@@ -1,20 +1,20 @@
 package com.phenan.scalalr
 package macroimpl
 
+import java.util.regex.Pattern
+
 import shared._
 
-import java.util.regex._
-
-trait ASTGeneratorModule {
-  this: CodeGeneratorModule with TypingModule with MacroSyntaxRuleModule with SyntaxRuleModule with MacroModule =>
+trait TreeGeneratorModule {
+  this: CodeGeneratorModule with TyperModule with SyntaxGeneratorModule with SyntaxInfoModule with SyntaxRuleModule with MacroModule =>
 
   import c.universe._
 
   override type GeneratedCode = List[Tree]
 
-  override val output: ASTOutput.type = ASTOutput
+  override lazy val output: TreeOutput = new TreeOutput(typer)
 
-  object ASTOutput extends Output {
+  class TreeOutput (typer: Typer) extends Output {
     override type Type = Tree
     override type Parameter = ValDef
     override type TypeParameter = TypeDef
@@ -29,8 +29,8 @@ trait ASTGeneratorModule {
 
     def simpleType (typeName: String): Type = stringToType(typeName)
     def objectType (objectName: String): Type = tq"${stringToQualifiedTerm(objectName)}.type"
-    def nonTerminalType (nt: NonTerminal): Type = genericType(nt.ntType)
-    def literalType (lit: LiteralToken): Type = genericType(lit.literalType)
+    def nonTerminalType (nt: NonTerminal): Type = typer.unchecked(nt.ntType)
+    def literalType (lit: LiteralToken): Type = typer.unchecked(lit.literalType)
 
     def tuple2Type (v1: Type, v2: Type): Type = tq"($v1, $v2)"
     def functionType (left: Type, right: Type): Type = tq"$left => $right"
@@ -96,12 +96,6 @@ trait ASTGeneratorModule {
       case FunctionCall(name, correspondence) => q"$name(...${correspondence(args)})"
     }
 
-    private def genericType (t: GenericType): Type = t match {
-      case ParameterizedType(clazz, args) => tq"${typeConstructor(clazz)}[..${args.map(genericType)}]"
-      case SimpleType(clazz) => typeConstructor(clazz)
-      case SingletonType(obj) => tq"${genericObject(obj)}.type"
-    }
-
     private def stringToType (string: String): Type = {
       val dot = string.lastIndexOf('.')
       val prefix = string.take(dot)
@@ -114,16 +108,6 @@ trait ASTGeneratorModule {
     private def stringToQualifiedTerm (string: String): Tree = {
       val terms = string.split(Pattern.quote(".")).map(TermName(_))
       terms.tail.foldLeft [Tree] (q"${terms.head}") { (left, term) => q"$left.$term" }
-    }
-
-    private def typeConstructor (clazz: GenericClass): Tree = clazz match {
-      case DSLClass(outer, name) => tq"$outer.$name"
-      case ScalaClass(symbol)    => stringToType(symbol.fullName)            // 頭悪い方法な気がする
-    }
-
-    private def genericObject (obj: GenericObject): Tree = obj match {
-      case DSLObject(outer, name) => q"$outer.$name"
-      case ScalaObject(symbol)    => stringToQualifiedTerm(symbol.fullName)  // 頭悪い方法な気がする
     }
   }
 }
