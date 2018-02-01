@@ -1,8 +1,6 @@
 package com.phenan.scalalr
 package macroimpl
 
-import java.util.regex.Pattern
-
 import shared._
 
 trait TreeGeneratorModule {
@@ -27,14 +25,14 @@ trait TreeGeneratorModule {
 
     def literalIdentifier (lit: LiteralToken): Option[String] = None
 
-    def simpleType (typeName: String): Type = stringToType(typeName)
-    def objectType (objectName: String): Type = tq"${stringToQualifiedTerm(objectName)}.type"
+    def simpleType (typeName: String): Type = typer.stringToTypeTree(typeName)
+    def objectType (objectName: String): Type = tq"${typer.stringToQualifiedTerm(objectName)}.type"
     def nonTerminalType (nt: NonTerminal): Type = typer.unchecked(nt.ntType)
     def literalType (lit: LiteralToken): Type = typer.unchecked(lit.literalType)
 
     def tuple2Type (v1: Type, v2: Type): Type = tq"($v1, $v2)"
     def functionType (left: Type, right: Type): Type = tq"$left => $right"
-    def parameterizedType (genName: String, args: List[Type]): Type = tq"${stringToType(genName)}[..$args]"
+    def parameterizedType (genName: String, args: List[Type]): Type = tq"${typer.stringToTypeTree(genName)}[..$args]"
 
     def parameter (name: String, paramType: Type): Parameter = ValDef(Modifiers(Flag.PARAM), TermName(name), paramType, EmptyTree)
     def unusedParameter (paramType: Type): Parameter = ValDef(Modifiers(Flag.PARAM), TermName(generateUniqueName), paramType, EmptyTree)
@@ -70,7 +68,7 @@ trait TreeGeneratorModule {
       q"implicit class ${TypeName(generateUniqueName)} [..$typeParams] ($parameter)(implicit ..$implicitParams) { ..$members }"
     }
 
-    def objectRef (objectName: String): Expr = stringToQualifiedTerm(objectName)
+    def objectRef (objectName: String): Expr = typer.stringToQualifiedTerm(objectName)
 
     def methodCall (receiver: Expr, methodName: String, typeArgs: List[Type], args: List[Expr]): Expr = {
       q"$receiver.${TermName(methodName)}[..$typeArgs](..$args)"
@@ -94,20 +92,6 @@ trait TreeGeneratorModule {
       case ObjectRef(name) if args.isEmpty => q"$name"
       case ConstructorCall(name, correspondence) => q"new $name(...${correspondence(args)})"
       case FunctionCall(name, correspondence) => q"$name(...${correspondence(args)})"
-    }
-
-    private def stringToType (string: String): Type = {
-      val dot = string.lastIndexOf('.')
-      val prefix = string.take(dot)
-      val postfix = string.drop(dot + 1)
-
-      if (prefix.isEmpty) tq"${TypeName(postfix)}"
-      else tq"${stringToQualifiedTerm(prefix)}.${TypeName(postfix)}"
-    }
-
-    private def stringToQualifiedTerm (string: String): Tree = {
-      val terms = string.split(Pattern.quote(".")).map(TermName(_))
-      terms.tail.foldLeft [Tree] (q"${terms.head}") { (left, term) => q"$left.$term" }
     }
   }
 }

@@ -1,5 +1,7 @@
 package com.phenan.scalalr.macroimpl
 
+import java.util.regex.Pattern
+
 trait TyperModule {
   this: MacroModule =>
 
@@ -21,13 +23,27 @@ trait TyperModule {
 
     def unchecked (t: Type): Tree = {
       if (t.typeArgs.nonEmpty) {
-        tq"${t.typeConstructor}[..${t.typeArgs.map(unchecked)}]"
+        tq"${stringToTypeTree(t.typeConstructor.typeSymbol.fullName)}[..${t.typeArgs.map(unchecked)}]"
       }
       else {
         classTypes_rev.get(t).map(clazz => tq"$clazz")
           .orElse(moduleTypes_rev.get(t).map(module => tq"$module.type"))
           .getOrElse(tq"$t")
       }
+    }
+
+    def stringToTypeTree (string: String): Tree = {
+      val dot = string.lastIndexOf('.')
+      val prefix = string.take(dot)
+      val postfix = string.drop(dot + 1)
+
+      if (prefix.isEmpty) tq"${TypeName(postfix)}"
+      else tq"${stringToQualifiedTerm(prefix)}.${TypeName(postfix)}"
+    }
+
+    def stringToQualifiedTerm (string: String): Tree = {
+      val terms = string.split(Pattern.quote(".")).map(TermName(_))
+      terms.tail.foldLeft [Tree] (q"${terms.head}") { (left, term) => q"$left.$term" }
     }
 
     private lazy val classTypes_rev = classTypes.map { case (k, v) => (v, k) }
@@ -73,28 +89,31 @@ trait TyperModule {
     private def moduleDefTypeChecker (m: ModuleDef): Typer = {
       val ModuleDef(mod, name, Template(parents, self, body)) = m
 
-      val classDefs = collectClassDefs(body).map(TermName(c.freshName("ScaLALR$")) -> _).toMap
-      val moduleDefs = collectModuleDefs(body).map(TermName(c.freshName("ScaLALR$")) -> _).toMap
+      val classDefs = collectClassDefs(body)
+      val moduleDefs = collectModuleDefs(body)
 
-      val classExprs = classDefs.map { case (n, t) => q"def $n : $t = null" }.toList
-      val moduleExprs = moduleDefs.map { case (n, t) => q"def $n : $t.type = null" }.toList
+      val nameAndType_Class = classDefs.map(TermName(c.freshName("ScaLALR$")) -> _.name).toMap
+      val nameAndType_Module = moduleDefs.map(TermName(c.freshName("ScaLALR$")) -> _.name).toMap
 
-      val moduleDef = ModuleDef(mod, name, Template(parents, self, classExprs ++ moduleExprs ++ body))
+      val classExprs = nameAndType_Class.map { case (n, t) => q"def $n : $t = null" }.toList
+      val moduleExprs = nameAndType_Module.map { case (n, t) => q"def $n : $t.type = null" }.toList
+
+      val moduleDef = ModuleDef(mod, name, Template(parents, self, classDefs ++ moduleDefs ++ classExprs ++ moduleExprs))
 
       val ModuleDef(_, _, Template(_, _, trees)) = c.typecheck(moduleDef)
 
       val classTypes = trees.collect {
-        case DefDef(_, n, _, _, t, _) if classDefs.contains(n) => classDefs(n) -> t.tpe.dealias
+        case DefDef(_, n, _, _, t, _) if nameAndType_Class.contains(n) => nameAndType_Class(n) -> t.tpe.dealias
       }.toMap
 
       val moduleTypes = trees.collect {
-        case DefDef(_, n, _, _, t, _) if moduleDefs.contains(n) => moduleDefs(n) -> t.tpe.dealias
+        case DefDef(_, n, _, _, t, _) if nameAndType_Module.contains(n) => nameAndType_Module(n) -> t.tpe.dealias
       }.toMap
 
       Typer(classTypes, moduleTypes, name)
     }
 
-    private def collectClassDefs (body: List[Tree]) = body.collect { case ClassDef(_, name, _, _) => name }
-    private def collectModuleDefs (body: List[Tree]) = body.collect { case ModuleDef(_, name, _) => name }
+    private def collectClassDefs (body: List[Tree]) = body.collect { case c: ClassDef => c }
+    private def collectModuleDefs (body: List[Tree]) = body.collect { case m: ModuleDef => m }
   }
 }
