@@ -50,10 +50,13 @@ trait SyntaxGeneratorModule {
       */
     private def generateRule (syntaxInfo: SyntaxInfo): Rule = {
       val left = NonTerminalImpl(typer.check(syntaxInfo.returnType))
-      val operators = syntaxInfo.operators.map(_.map(Keyword))
-      val operands = syntaxInfo.operandTypes.map(t => NonTerminalImpl(typer.check(t)))
-      val expr = buildSyntaxExpression(operators, operands)
-      Rule(left, expr, syntaxInfo.semantics)
+      if (syntaxInfo.operators == Nil && syntaxInfo.operandTypes == Nil) Rule(left, List(Symbol(EmptyString)), syntaxInfo.semantics)
+      else {
+        val operators = syntaxInfo.operators.map(_.map(Keyword))
+        val operands = syntaxInfo.operandTypes.map(t => NonTerminalImpl(typer.check(t)))
+        val expr = buildSyntaxExpression(operators, operands)
+        Rule(left, expr, syntaxInfo.semantics)
+      }
     }
 
     /**

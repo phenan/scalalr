@@ -176,6 +176,22 @@ trait SyntaxRuleModule {
     }
   }
 
+  def projectRule (r: Rule): String = {
+    s"${r.left.toString} := ${r.right.map(projectSymbol).mkString(" ")}"
+  }
+
+  def projectSymbol (s: Symbol): String = s match {
+    case Inl(nt)     => nt.toString
+    case Inr(Inl(t)) => projectTerminal(t)
+    case Inr(Inr(_)) => "ε"
+  }
+
+  def projectTerminal (terminal: Terminal): String = terminal match {
+    case Inl(lit)    => lit.toString
+    case Inr(Inl(k)) => k.kw
+    case Inr(Inr(_)) => "$"
+  }
+
   private def translateKeyword (kw: String): String = kw match {
     case "abstract"  => "$$abstract"
     case "case"      => "$$case"

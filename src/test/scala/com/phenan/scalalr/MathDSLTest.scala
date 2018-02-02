@@ -24,4 +24,18 @@ class MathDSLTest extends FunSuite with DiagrammedAssertions {
 
     assert (x == Paren(Mul(Paren(Sub(Num(1), Div(Mul(Num(2), Num(2)), Num(3)))), Num(4))))
   }
+
+  test ("test ints") {
+    val x : Expr = $$braceleft $$braceright
+
+    println(x)
+
+    val y : Expr = $$braceleft (1) $$braceright
+
+    println(y)
+
+    val z : Expr = $$braceleft (1)$$comma (2) $$braceright
+
+    println(z)
+  }
 }

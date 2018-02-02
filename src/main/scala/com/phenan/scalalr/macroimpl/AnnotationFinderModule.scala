@@ -31,4 +31,11 @@ trait AnnotationFinderModule {
       case t => Some(anns -> t)
     }
   }
+
+  object TypeWithSepAnnotation {
+    def unapply (tree: Tree): Option[(Option[String], Tree)] = tree match {
+      case Annotated(AnnotationTree("sep", List(Literal(Constant(sep: String)))), t) => Some((Some(sep), t))
+      case t => Some((None, t))
+    }
+  }
 }

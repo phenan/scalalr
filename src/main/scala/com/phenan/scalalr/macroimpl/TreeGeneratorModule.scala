@@ -89,9 +89,14 @@ trait TreeGeneratorModule {
     def constructAST (rule: Rule, args: List[Expr]): Expr = rule.action match {
       case Inheritance if args.lengthCompare(1) == 0 => args.head
       case LiteralRef if args.lengthCompare(1) == 0 => args.head
-      case ObjectRef(name) if args.isEmpty => q"$name"
+      case ObjectRef(name) if args.isEmpty => name
       case ConstructorCall(name, correspondence) => q"new $name(...${correspondence(args)})"
       case FunctionCall(name, correspondence) => q"$name(...${correspondence(args)})"
+      case ListCons if args.lengthCompare(2) == 0 => q"${args.head} +: ${args.tail.head}"
+      case ConstructSeq if args.lengthCompare(2) == 0 => q"${args.head} +: ${args.tail.head}.toSeq"
+      case ConstructSeqTail if args.lengthCompare(2) == 0 => q"com.phenan.scalalr.internal.ConsSeqTail(${args.head}, ${args.tail.head})"
+      case SingleList if args.lengthCompare(1) == 0 => q"scala.collection.immutable.List($args.head)"
+      case SingleSeqTail if args.lengthCompare(1) == 0 => q"com.phenan.scalalr.internal.ConsSeqTail(${args.head}, com.phenan.scalalr.internal.SeqTail.empty)"
     }
   }
 }

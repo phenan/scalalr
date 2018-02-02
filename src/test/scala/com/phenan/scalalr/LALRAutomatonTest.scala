@@ -3,6 +3,7 @@ package com.phenan.scalalr
 import cli._
 
 import org.scalatest._
+import shapeless._
 
 /**
   * Created by @phenan on 2016/12/12.
@@ -31,8 +32,8 @@ class LALRAutomatonTest extends FunSuite with Matchers {
 
 
     automaton.start shouldBe node0
-    automaton.edges(node0)(nonTerminalSymbol("T")) shouldBe node1
-    automaton.edges(node1)(keywordSymbol("mul")) shouldBe node2
+    automaton.edges(node0)(Inl(NonTerminalImpl("T"))) shouldBe node1
+    automaton.edges(node1)(Inr(Inl(Terminal(Keyword("mul"))))) shouldBe node2
   }
 
   def simpleSyntax = Syntax(NonTerminalImpl("S"), List(derivation_S_T, branch_T_M, branch_T_N, derivation_M_mul, derivation_N_int))

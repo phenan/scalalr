@@ -63,7 +63,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def objectRule (moduleDef: ModuleDef): List[SyntaxInfo] = {
     val ModuleDef(mod, name, _) = moduleDef
-    operatorRule(mod, Nil, SingletonTypeTree(Ident(name)), _ => ObjectRef(name))
+    operatorRule(mod, Nil, SingletonTypeTree(Ident(name)), _ => ObjectRef(q"$name"))
   }
 
   /**
@@ -73,7 +73,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def fieldRule (fieldDef: ValDef): List[SyntaxInfo] = {
     val ValDef(mod, name, fieldType, _) = fieldDef
-    operatorRule(mod, Nil, fieldType, _ => ObjectRef(name))
+    operatorRule(mod, Nil, fieldType, _ => ObjectRef(q"$name"))
   }
 
   /**
@@ -148,24 +148,54 @@ trait SyntaxInfoCollectorModule {
   private def operatorRule (mod: Modifiers, paramLists: List[List[ValDef]], returnType: Tree, semantics: (List[Tree] => List[List[Tree]]) => SemanticActionImpl): List[SyntaxInfo] = {
     val TypeWithSyntaxAnnotation(annotations, ret) = returnType
 
-    ( findAnnotation("syntax", mod) ++ annotations ).flatten.map {
-      syntax => syntaxAnnotationRule(syntax, paramLists, ret, semantics)
+    ( findAnnotation("syntax", mod) ++ annotations ).flatten.flatMap { syntax =>
+      val (operandLists, ss) = variableParameterRules(paramLists)
+      syntaxAnnotationRule(syntax, operandLists, ret, semantics) :: ss
     }
+  }
+
+  private def variableParameterRules (paramLists: List[List[ValDef]]): (List[List[Operand]], List[SyntaxInfo]) = {
+    paramLists.foldRight[(List[List[Operand]], List[SyntaxInfo])]((Nil, Nil)) {
+      case (paramList, (operandLists, syntax)) =>
+        val (operands, ss) = variableParameterRules_paramList(paramList)
+        (operands :: operandLists, ss ++ syntax)
+    }
+  }
+
+  private def variableParameterRules_paramList (paramList: List[ValDef]): (List[Operand], List[SyntaxInfo]) = {
+    paramList.foldRight[(List[Operand], List[SyntaxInfo])]((Nil, Nil)) {
+      case (ValDef(_, name, AppliedTypeTree(Select(Select(Ident(termNames.ROOTPKG), TermName("scala")), TypeName("<repeated>")), List(TypeWithSepAnnotation(sep, t))), _), (params, syntax)) =>
+        (RepOperand(name, t) :: params, variableParameterSyntax(t, sep) ++ syntax)
+      case (ValDef(_, name, t, _), (params, syntax)) =>
+        (NormalOperand(name, t) :: params, syntax)
+    }
+  }
+
+  private def variableParameterSyntax (componentType: Tree, sep: Option[String]): List[SyntaxInfo] = sep match {
+    case Some(s) =>
+      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, ObjectRef(q"scala.collection.immutable.List.empty[$componentType]")),
+           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil), List(componentType), SingleList),
+           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), ConstructSeq),
+           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil), List(componentType), SingleSeqTail),
+           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), ConstructSeqTail))
+    case None =>
+      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, ObjectRef(q"scala.collection.immutable.List.empty[$componentType]")),
+           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"Seq[$componentType]"), ListCons))
   }
 
   /**
     * syntaxアノテーションに対応する文法規則の情報を返す関数
     * @param syntaxAnnotation syntax アノテーションの引数
-    * @param paramLists 引数リストのリスト
+    * @param operandLists 引数リストのリスト
     * @param returnType 返り値の型を表す構文木
     * @param semantics 対応する関数呼び出しを表現する
     * @return syntaxアノテーションに対応する文法規則の情報
     */
-  private def syntaxAnnotationRule (syntaxAnnotation: Tree, paramLists: List[List[ValDef]], returnType: Tree, semantics: (List[Tree] => List[List[Tree]]) => SemanticActionImpl): SyntaxInfo = {
+  private def syntaxAnnotationRule (syntaxAnnotation: Tree, operandLists: List[List[Operand]], returnType: Tree, semantics: (List[Tree] => List[List[Tree]]) => SemanticActionImpl): SyntaxInfo = {
     syntaxAnnotation match {
       case Apply(Select(Apply(Ident(TermName("StringContext")), parts), TermName("s")), args) =>
         val operators = getOperators(parts)
-        val (operands, correspondence) = getOperands(args, paramLists)
+        val (operands, correspondence) = getOperands(args, operandLists)
         SyntaxInfo(returnType, operators, operands, semantics(correspondence))
 
       case other =>
@@ -187,24 +217,39 @@ trait SyntaxInfoCollectorModule {
   /**
     * オペランド名を解決する関数
     * @param args オペランド名のリスト
-    * @param paramLists 引数リストのリスト
+    * @param operandLists 引数リストのリスト
     * @return (オペランドの型を表現する構文木のリスト, オペランド列を引数リストのリストに直す関数)
     */
-  private def getOperands (args: List[Tree], paramLists: List[List[ValDef]]): (List[Tree], List[Tree] => List[List[Tree]]) = {
+  private def getOperands (args: List[Tree], operandLists: List[List[Operand]]): (List[Tree], List[Tree] => List[List[Tree]]) = {
     val parameters = for {
-      (paramList, index1)                              <- paramLists.zipWithIndex
-      (ValDef(_, valName, valType, EmptyTree), index2) <- paramList.zipWithIndex
-    } yield valName -> (valType -> (index1 -> index2))
+      (operandList, index1) <- operandLists.zipWithIndex
+      (operand, index2)     <- operandList.zipWithIndex
+    } yield operand.name -> (operand -> (index1 -> index2))
 
-    val parameterMap = parameters.toMap[Name, (Tree, (Int, Int))]
+    val parameterMap = parameters.toMap[Name, (Operand, (Int, Int))]
 
     val operands = args.map { case Ident(termName) => parameterMap(termName) }
 
-    // List[(operand, (index1, index2))] を作り, index1 でグループ化してソートし, 更に各グループ内で index2 でソートする
+    // List[(arg, index1, index2)] を作り, index1 でグループ化してソートし, 更に各グループ内で index2 でソートする
     val correspondence: List[Tree] => List[List[Tree]] = tree => {
-      tree.zip(operands.map(_._2)).groupBy(_._2._1).toList.sortBy(_._1).map(_._2.sortBy(_._2._2).map(_._1))
+      val zipped = tree.zip(operands).map {
+        case (arg, (RepOperand(_, _), (i1, i2)))    => (q"$arg:_*", i1, i2)
+        case (arg, (NormalOperand(_, _), (i1, i2))) => (arg, i1, i2)
+      }
+      zipped.groupBy(_._2).toList.sortBy(_._1).map(_._2.sortBy(_._3).map(_._1))
     }
 
-    (operands.map(_._1), correspondence)
+    (operands.map(_._1.valType), correspondence)
+  }
+
+  private sealed trait Operand {
+    def name: TermName
+    def valType: Tree
+  }
+
+  private case class NormalOperand (name: TermName, valType: Tree) extends Operand
+
+  private case class RepOperand (name: TermName, componentType: Tree) extends Operand {
+    override def valType: Tree = tq"Seq[$componentType]"
   }
 }

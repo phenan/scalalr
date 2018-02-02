@@ -3,7 +3,7 @@ package com.phenan.scalalr.macroimpl
 import java.util.regex.Pattern
 
 trait TyperModule {
-  this: MacroModule =>
+  this: AnnotationFinderModule with MacroModule =>
 
   import c.universe._
 
@@ -21,15 +21,15 @@ trait TyperModule {
 
     def check (tree: Tree): Type = treeToTypeMemo.getOrElseUpdate(tree, resolveType(tree))
 
-    def unchecked (t: Type): Tree = {
-      if (t.typeArgs.nonEmpty) {
+    def unchecked (t: Type): Tree = t match {
+      case AnnotatedType(_, underlying) =>          // remove annotations
+        unchecked(underlying)
+      case _ if t.typeArgs.nonEmpty =>
         tq"${stringToTypeTree(t.typeConstructor.typeSymbol.fullName)}[..${t.typeArgs.map(unchecked)}]"
-      }
-      else {
+      case _ =>
         classTypes_rev.get(t).map(clazz => tq"$clazz")
           .orElse(moduleTypes_rev.get(t).map(module => tq"$module.type"))
           .getOrElse(tq"$t")
-      }
     }
 
     def stringToTypeTree (string: String): Tree = {
@@ -66,6 +66,8 @@ trait TyperModule {
         c.typecheck(tree, c.TYPEmode).tpe.dealias
       case AppliedTypeTree(typeConstructor, args) =>
         c.typecheck(tq"$typeConstructor[..${args.map(check)}]", c.TYPEmode).tpe.dealias
+      case Annotated(AnnotationTree(ann, args), t) =>
+        c.typecheck(tq"${check(t)}@${TypeName(ann)}(..$args)", c.TYPEmode).tpe.dealias
       case _ =>
         c.typecheck(tree, c.TYPEmode).tpe.dealias
     }

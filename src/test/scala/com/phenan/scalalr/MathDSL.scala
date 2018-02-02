@@ -26,4 +26,7 @@ object MathDSL {
 
   @syntax(s"( $e )")
   case class Paren (e: Expr) extends Factor
+
+  @syntax(s"{ $ns }")
+  case class Ints (ns: Int@sep(",")*) extends Expr
 }

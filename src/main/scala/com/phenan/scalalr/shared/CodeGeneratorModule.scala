@@ -213,12 +213,16 @@ trait CodeGeneratorModule {
       * @param rule reduce 対象の文法
       * @return Reduce による巻き戻りの道のりを表現する LR closure のリストの集合
       */
-    private def reducePath (from: LRClosure, rule: Rule) = rule.right.foldRight(Set(List(from))) { (symbol, set) =>
-      for {
-        path <- set if automaton.state(path.head) == symbol
-        node <- automaton.reverseEdges(path.head)
-      } yield node :: path
+    private def reducePath (from: LRClosure, rule: Rule): Set[List[LRClosure]] = rule.right.foldRight(Set(List(from))) {
+      case (Inl(nt), set)     => reducePath(Inl(nt), set)
+      case (Inr(Inl(t)), set) => reducePath(Inr(Inl(t)), set)
+      case (Inr(Inr(_)), set) => set
     }
+
+    private def reducePath (symbol: NonEmptySymbol, set: Set[List[LRClosure]]): Set[List[LRClosure]] = for {
+      path <- set if automaton.state(path.head) == symbol
+      node <- automaton.reverseEdges(path.head)
+    } yield node :: path
 
     private def reduceImplicitDefinition (rule: Rule, path: List[LRClosure], destination: LRClosure, lookahead: Terminal): MemberDef = {
       val (typeParams, baseType) =
