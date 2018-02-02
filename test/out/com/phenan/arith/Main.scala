@@ -25,6 +25,14 @@ object Main {
 
     println(program4)
 
+    val program5: Program = (10)
+
+    println(program5)
+
+    val program6: Program = literal(10)
+
+    println(program6)
+
     val longProgram: Program =
       1 $$plus 2 $$plus 3 $$plus 4 $$plus 5 $$plus 6 $$plus 7 $$plus 8 $$plus 9 $$plus 10 $$plus
       11 $$plus 12 $$plus 13 $$plus 14 $$plus 15 $$plus 16 $$plus 17 $$plus 18 $$plus 19 $$plus 20 $$plus

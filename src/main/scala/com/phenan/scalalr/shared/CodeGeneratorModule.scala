@@ -85,9 +85,8 @@ trait CodeGeneratorModule {
     /**
       * LALR オートマトンの各ノードを表現するデータ型の定義を出力する関数
       */
-    lazy val nodeClassDefinitions: List[MemberDef] = automaton.nodes.toList.map { node =>
-      if (automaton.start == node) caseObjectDef(nodeName(node))
-      else automaton.state(node) match {
+    lazy val nodeClassDefinitions: List[MemberDef] = automaton.nodes.filterNot(automaton.start == _).toList.map { node =>
+      automaton.state(node) match {
         case Inl(nt)            => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX")), parameter("value", nonTerminalType(nt))), None)
         case Inr(Inl(Inl(lit))) => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX")), parameter("value", literalType(lit))), None)
         case _                  => caseClassDef(nodeName(node), typeParameters("NX"), List(parameter("prev", simpleType("NX"))), None)
@@ -328,7 +327,10 @@ trait CodeGeneratorModule {
     }
 
     private lazy val keywordTokenTypeNames: Map[Keyword, String] = automaton.syntax.keywords.map(_ -> generateUniqueName).toMap
-    private lazy val nodeName: Map[LRClosure, String] = automaton.nodes.map(_ -> generateUniqueName).toMap
+    private lazy val nodeName: Map[LRClosure, String] = automaton.nodes.map { node =>
+      if (automaton.start == node) node -> "com.phenan.scalalr.internal.StartNode"
+      else node -> generateUniqueName
+    }.toMap
 
     private lazy val startNode: String = nodeName(automaton.start)
   }
