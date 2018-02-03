@@ -13,7 +13,7 @@ class dsl [T] extends StaticAnnotation {
 class dslBundle (val c: scala.reflect.macros.whitebox.Context)
   extends TreeGeneratorModule with CodeGeneratorModule with LALRAutomatonModule
     with SyntaxGeneratorModule with TyperModule with SyntaxInfoCollectorModule with SyntaxInfoModule
-    with SyntaxRuleModule with AnnotationFinderModule with MacroModule
+    with SyntaxRuleModule with AnnotationFinderModule with MacroUtilitiesModule with MacroModule
 {
   import c.universe._
 
@@ -39,15 +39,6 @@ class dslBundle (val c: scala.reflect.macros.whitebox.Context)
     doTypeCheck(t)
     val syntax = generateSyntax(s)
     val generated = CodeGenerator(LALRAutomaton(syntax)).generatedDefinitions
-    addMembers(t, generated)
-  }
-
-  private def addMembers (tree: Tree, members: List[Tree]): Tree = tree match {
-    case ModuleDef (mod, name, Template(parents, self, body)) =>
-      ModuleDef (mod, name, Template(parents, self, body ++ members))
-    case ClassDef (mod, name, typeParams, Template(parents, self, body)) =>
-      ClassDef (mod, name, typeParams, Template(parents, self, body ++ members))
-    case other =>
-      c.abort(other.pos, s"cannot add members to $other")
+    MacroUtilities.addMembers(t, generated)
   }
 }

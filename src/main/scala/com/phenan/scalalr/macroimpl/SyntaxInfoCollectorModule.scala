@@ -1,7 +1,7 @@
 package com.phenan.scalalr.macroimpl
 
 trait SyntaxInfoCollectorModule {
-  this: AnnotationFinderModule with SyntaxInfoModule with MacroModule =>
+  this: AnnotationFinderModule with SyntaxInfoModule with MacroUtilitiesModule with MacroModule =>
 
   import c.universe._
 
@@ -50,8 +50,8 @@ trait SyntaxInfoCollectorModule {
     */
   private def classRule (classDef: ClassDef): List[SyntaxInfo] = {
     val ClassDef(mod, name, Nil, Template(_, _, body)) = classDef
-    val constructors = findConstructors(body)
-    val primaryRules = findPrimaryConstructor(body, constructors).map(primaryConstructorRules(mod, name, _)).getOrElse(Nil)
+    val constructors = MacroUtilities.findConstructors(body)
+    val primaryRules = MacroUtilities.findPrimaryConstructor(body).map(primaryConstructorRules(mod, name, _)).getOrElse(Nil)
     val auxiliaryRules = constructors.flatMap(auxiliaryConstructorRules(name, _))
     primaryRules ++ auxiliaryRules
   }
@@ -63,7 +63,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def objectRule (moduleDef: ModuleDef): List[SyntaxInfo] = {
     val ModuleDef(mod, name, _) = moduleDef
-    operatorRule(mod, Nil, SingletonTypeTree(Ident(name)), _ => ObjectRef(q"$name"))
+    operatorRule(mod, Nil, SingletonTypeTree(Ident(name)), _ => SemanticActionImpl.returnConstant(q"$name"))
   }
 
   /**
@@ -73,7 +73,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def fieldRule (fieldDef: ValDef): List[SyntaxInfo] = {
     val ValDef(mod, name, fieldType, _) = fieldDef
-    operatorRule(mod, Nil, fieldType, _ => ObjectRef(q"$name"))
+    operatorRule(mod, Nil, fieldType, _ => SemanticActionImpl.returnConstant(q"$name"))
   }
 
   /**
@@ -83,35 +83,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def functionRule (funDef: DefDef): List[SyntaxInfo] = {
     val DefDef(mod, name, Nil, paramLists, returnType, _) = funDef
-    operatorRule(mod, paramLists, returnType, FunctionCall(name, _))
-  }
-
-  /**
-    * 全てのコンストラクタ定義を返す関数
-    * @param body クラス定義のボディ部分
-    * @return 全てのコンストラクタ定義
-    */
-  private def findConstructors (body: List[Tree]): List[DefDef] = body.collect {
-    case c @ DefDef(_, termNames.CONSTRUCTOR, _, _, _, _) => c
-  }
-
-  /**
-    * プライマリコンストラクタを探す関数
-    * @param body クラス定義のボディ部分
-    * @param constructors 全てのコンストラクタ (bodyから検索可能だが、こうした方が定義がシンプルになる)
-    * @return Option[プライマリコンストラクタ]
-    */
-  private def findPrimaryConstructor (body: List[Tree], constructors: List[DefDef]): Option[DefDef] = {
-    val paramAccessors = body.collect {
-      case ValDef(mods, name, _, _) if mods.hasFlag(Flag.PARAMACCESSOR) => name
-    }
-    constructors.find {
-      case DefDef(_, termNames.CONSTRUCTOR, _, paramLists, _, _) => paramAccessors.forall { paramName =>
-        paramLists.exists {
-          _.exists { p => p.mods.hasFlag(Flag.PARAMACCESSOR) && p.name == paramName }
-        }
-      }
-    }
+    operatorRule(mod, paramLists, returnType, SemanticActionImpl.functionCall(q"$name", _))
   }
 
   /**
@@ -123,7 +95,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def primaryConstructorRules (mod: Modifiers, typeName: TypeName, primaryConstructor: DefDef): List[SyntaxInfo] = {
     val DefDef(_, termNames.CONSTRUCTOR, Nil, paramLists, _, _) = primaryConstructor
-    operatorRule(mod, paramLists, Ident(typeName), ConstructorCall(typeName, _))
+    operatorRule(mod, paramLists, Ident(typeName), SemanticActionImpl.constructorCall(tq"$typeName", _))
   }
 
   /**
@@ -134,7 +106,7 @@ trait SyntaxInfoCollectorModule {
     */
   private def auxiliaryConstructorRules (typeName: TypeName, constructor: DefDef): List[SyntaxInfo] = {
     val DefDef(mod, termNames.CONSTRUCTOR, Nil, paramLists, _, _) = constructor
-    operatorRule(mod, paramLists, Ident(typeName), ConstructorCall(typeName, _))
+    operatorRule(mod, paramLists, Ident(typeName), SemanticActionImpl.constructorCall(tq"$typeName", _))
   }
 
   /**
@@ -173,14 +145,14 @@ trait SyntaxInfoCollectorModule {
 
   private def variableParameterSyntax (componentType: Tree, sep: Option[String]): List[SyntaxInfo] = sep match {
     case Some(s) =>
-      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, ObjectRef(q"scala.collection.immutable.List.empty[$componentType]")),
-           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil), List(componentType), SingleList),
-           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), ConstructSeq),
-           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil), List(componentType), SingleSeqTail),
-           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), ConstructSeqTail))
+      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, SemanticActionImpl.returnConstant(q"scala.collection.immutable.List.empty[$componentType]")),
+           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil), List(componentType), SemanticActionImpl.unaryOperation(arg => q"scala.collection.immutable.List($arg)")),
+           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), SemanticActionImpl.binaryOperation((x, xs) => q"$x +: $xs.toSeq")),
+           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil), List(componentType), SemanticActionImpl.unaryOperation(arg => q"com.phenan.scalalr.internal.ConsSeqTail($arg, com.phenan.scalalr.internal.SeqTail.empty)")),
+           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), SemanticActionImpl.binaryOperation((x, xs) => q"com.phenan.scalalr.internal.ConsSeqTail($x, $xs)")))
     case None =>
-      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, ObjectRef(q"scala.collection.immutable.List.empty[$componentType]")),
-           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"Seq[$componentType]"), ListCons))
+      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, SemanticActionImpl.returnConstant(q"scala.collection.immutable.List.empty[$componentType]")),
+           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"Seq[$componentType]"), SemanticActionImpl.binaryOperation((x, xs) => q"$x +: $xs")))
   }
 
   /**

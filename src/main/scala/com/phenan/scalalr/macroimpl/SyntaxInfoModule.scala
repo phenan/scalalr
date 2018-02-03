@@ -5,18 +5,40 @@ trait SyntaxInfoModule {
 
   import c.universe._
 
-  sealed trait SemanticActionImpl
-  case object Inheritance extends SemanticActionImpl
-  case object LiteralRef extends SemanticActionImpl
-  case class ObjectRef (objectRef: Tree) extends SemanticActionImpl
-  case class ConstructorCall (typeName: TypeName, parameterCorrespondence: List[Tree] => List[List[Tree]]) extends SemanticActionImpl
-  case class FunctionCall (functionName: TermName, parameterCorrespondence: List[Tree] => List[List[Tree]]) extends SemanticActionImpl
+  class SemanticActionImpl (val run: List[Tree] => Tree)
 
-  case object SingleList extends SemanticActionImpl
-  case object ListCons extends SemanticActionImpl
-  case object ConstructSeq extends SemanticActionImpl
-  case object ConstructSeqTail extends SemanticActionImpl
-  case object SingleSeqTail extends SemanticActionImpl
+  object SemanticActionImpl {
+
+    lazy val returnArgument: SemanticActionImpl = SemanticActionImpl { args =>
+      if (args.lengthCompare(1) == 0) args.head
+      else c.abort(c.enclosingPosition, s"wrong macro implementation: expected one argument, but takes ${args.mkString("(", ", ", ")")}")
+    }
+
+    def returnConstant (constant: Tree): SemanticActionImpl = SemanticActionImpl { args =>
+      if (args.isEmpty) constant
+      else c.abort(c.enclosingPosition, s"wrong macro implementation: expected no argument, but takes ${args.mkString("(", ", ", ")")}")
+    }
+
+    def unaryOperation (operator: Tree => Tree): SemanticActionImpl = SemanticActionImpl { args =>
+      if (args.lengthCompare(1) == 0) operator(args.head)
+      else c.abort(c.enclosingPosition, s"wrong macro implementation: expected one argument, but takes ${args.mkString("(", ", ", ")")}")
+    }
+
+    def binaryOperation (operator: (Tree, Tree) => Tree): SemanticActionImpl = SemanticActionImpl { args =>
+      if (args.lengthCompare(2) == 0) operator(args.head, args.tail.head)
+      else c.abort(c.enclosingPosition, s"wrong macro implementation: expected two argument, but takes ${args.mkString("(", ", ", ")")}")
+    }
+
+    def constructorCall (typeName: Tree, parameterCorrespondence: List[Tree] => List[List[Tree]]): SemanticActionImpl = SemanticActionImpl { args =>
+      q"new $typeName(...${parameterCorrespondence(args)})"
+    }
+
+    def functionCall (functionRef: Tree, parameterCorrespondence: List[Tree] => List[List[Tree]]): SemanticActionImpl = SemanticActionImpl { args =>
+      q"$functionRef(...${parameterCorrespondence(args)})"
+    }
+
+    def apply (run: List[Tree] => Tree): SemanticActionImpl = new SemanticActionImpl(run)
+  }
 
   case class SyntaxInfo (returnType: Tree, operators: List[List[String]], operandTypes: List[Tree], semantics: SemanticActionImpl)
 }

@@ -86,7 +86,7 @@ trait SyntaxGeneratorModule {
       } (breakOut)
 
       eliminateShortcut(inheritances).flatMap {
-        case (left, rights) => rights.map(right => Rule(right, List(Symbol(left)), Inheritance))
+        case (left, rights) => rights.map(right => Rule(right, List(Symbol(left)), SemanticActionImpl.returnArgument))
       } (breakOut)
     }
 
@@ -123,7 +123,7 @@ trait SyntaxGeneratorModule {
       * @return 対応するリテラルの文法規則
       */
     private def literalRules (nonTerminals: Set[NonTerminal]): Set[Rule] = {
-      nonTerminals.map(nt => Rule(nt, List(Symbol(Terminal(LiteralTokenImpl(nt.ntType)))), LiteralRef))
+      nonTerminals.map(nt => Rule(nt, List(Symbol(Terminal(LiteralTokenImpl(nt.ntType)))), SemanticActionImpl.returnArgument))
     }
   }
 }
