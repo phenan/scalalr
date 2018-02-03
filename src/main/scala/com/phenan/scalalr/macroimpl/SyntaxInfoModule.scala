@@ -5,6 +5,22 @@ trait SyntaxInfoModule {
 
   import c.universe._
 
+  case class SyntaxInfo (returnType: Tree, operators: List[List[String]], operandTypes: List[Tree], semantics: SemanticActionImpl)
+
+  object SyntaxInfo {
+    def epsilonOperator (returnType: Tree, returnValue: Tree): SyntaxInfo = {
+      SyntaxInfo(returnType, Nil, Nil, SemanticActionImpl.returnConstant(returnValue))
+    }
+
+    def unaryOperator (returnType: Tree, prefix: List[String], operandType: Tree, postfix: List[String], semantics: Tree => Tree): SyntaxInfo = {
+      SyntaxInfo(returnType, List(prefix, postfix), List(operandType), SemanticActionImpl.unaryOperation(semantics))
+    }
+
+    def binaryOperator (returnType: Tree, prefix: List[String], operandType1: Tree, infix: List[String], operandType2: Tree, postfix: List[String], semantics: (Tree, Tree) => Tree): SyntaxInfo = {
+      SyntaxInfo(returnType, List(prefix, infix, postfix), List(operandType1, operandType2), SemanticActionImpl.binaryOperation(semantics))
+    }
+  }
+
   class SemanticActionImpl (val run: List[Tree] => Tree)
 
   object SemanticActionImpl {
@@ -39,6 +55,4 @@ trait SyntaxInfoModule {
 
     def apply (run: List[Tree] => Tree): SemanticActionImpl = new SemanticActionImpl(run)
   }
-
-  case class SyntaxInfo (returnType: Tree, operators: List[List[String]], operandTypes: List[Tree], semantics: SemanticActionImpl)
 }

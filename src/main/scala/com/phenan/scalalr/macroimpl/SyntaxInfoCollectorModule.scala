@@ -145,14 +145,14 @@ trait SyntaxInfoCollectorModule {
 
   private def variableParameterSyntax (componentType: Tree, sep: Option[String]): List[SyntaxInfo] = sep match {
     case Some(s) =>
-      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, SemanticActionImpl.returnConstant(q"scala.collection.immutable.List.empty[$componentType]")),
-           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil), List(componentType), SemanticActionImpl.unaryOperation(arg => q"scala.collection.immutable.List($arg)")),
-           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), SemanticActionImpl.binaryOperation((x, xs) => q"$x +: $xs.toSeq")),
-           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil), List(componentType), SemanticActionImpl.unaryOperation(arg => q"com.phenan.scalalr.internal.ConsSeqTail($arg, com.phenan.scalalr.internal.SeqTail.empty)")),
-           SyntaxInfo(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(List(s), Nil, Nil), List(componentType, tq"com.phenan.scalalr.internal.SeqTail[$componentType]"), SemanticActionImpl.binaryOperation((x, xs) => q"com.phenan.scalalr.internal.ConsSeqTail($x, $xs)")))
+      List(SyntaxInfo.epsilonOperator(tq"Seq[$componentType]", q"scala.collection.immutable.List.empty[$componentType]"),
+           SyntaxInfo.unaryOperator(tq"Seq[$componentType]", Nil, componentType, Nil, arg => q"scala.collection.immutable.List($arg)"),
+           SyntaxInfo.binaryOperator(tq"Seq[$componentType]", Nil, componentType, Nil, tq"com.phenan.scalalr.internal.SeqTail[$componentType]", Nil, (x, xs) => q"$x +: $xs.toSeq"),
+           SyntaxInfo.unaryOperator(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(s), componentType, Nil, arg => q"com.phenan.scalalr.internal.ConsSeqTail($arg, com.phenan.scalalr.internal.SeqTail.empty)"),
+           SyntaxInfo.binaryOperator(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(s), componentType, Nil, tq"com.phenan.scalalr.internal.SeqTail[$componentType]", Nil, (x, xs) => q"com.phenan.scalalr.internal.ConsSeqTail($x, $xs)"))
     case None =>
-      List(SyntaxInfo(tq"Seq[$componentType]", Nil, Nil, SemanticActionImpl.returnConstant(q"scala.collection.immutable.List.empty[$componentType]")),
-           SyntaxInfo(tq"Seq[$componentType]", List(Nil, Nil, Nil), List(componentType, tq"Seq[$componentType]"), SemanticActionImpl.binaryOperation((x, xs) => q"$x +: $xs")))
+      List(SyntaxInfo.epsilonOperator(tq"Seq[$componentType]", q"scala.collection.immutable.List.empty[$componentType]"),
+           SyntaxInfo.binaryOperator(tq"Seq[$componentType]", Nil, componentType, Nil, tq"Seq[$componentType]", Nil, (x, xs) => q"$x +: $xs"))
   }
 
   /**
