@@ -13,7 +13,7 @@ class dsl [T] extends StaticAnnotation {
 class dslBundle (val c: scala.reflect.macros.whitebox.Context)
   extends TreeGeneratorModule with CodeGeneratorModule with LALRAutomatonModule
     with SyntaxGeneratorModule with TyperModule with SyntaxInfoCollectorModule with SyntaxInfoModule
-    with SyntaxRuleModule with AnnotationFinderModule with MacroUtilitiesModule with MacroModule
+    with SyntaxRuleModule with AnnotationFinderModule with CommonNamesModule with MacroUtilitiesModule with MacroModule
 {
   import c.universe._
 

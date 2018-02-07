@@ -28,14 +28,14 @@ class MathDSLTest extends FunSuite with DiagrammedAssertions {
   test ("test ints") {
     val x : Expr = $$braceleft $$braceright
 
-    println(x)
+    assert (x == Ints())
 
     val y : Expr = $$braceleft (1) $$braceright
 
-    println(y)
+    assert (y == Ints(1))
 
     val z : Expr = $$braceleft (1)$$comma (2) $$braceright
 
-    println(z)
+    assert (z == Ints(1, 2))
   }
 }

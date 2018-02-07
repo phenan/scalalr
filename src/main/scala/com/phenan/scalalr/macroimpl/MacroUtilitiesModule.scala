@@ -6,6 +6,13 @@ trait MacroUtilitiesModule {
   import c.universe._
 
   object MacroUtilities {
+
+    /**
+      * 使用されていない名前を取得する関数
+      * @return prefix に ScaLALR$ のついた未使用の名前
+      */
+    def freshName: String = c.freshName("ScaLALR$")
+
     /**
       * 指定されたモジュールまたはクラス定義にメンバを追加する
       * @param tree モジュールまたはクラス定義

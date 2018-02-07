@@ -3,7 +3,7 @@ package com.phenan.scalalr.macroimpl
 import java.util.regex.Pattern
 
 trait TyperModule {
-  this: AnnotationFinderModule with MacroModule =>
+  this: AnnotationFinderModule with MacroUtilitiesModule with MacroModule =>
 
   import c.universe._
 
@@ -17,7 +17,7 @@ trait TyperModule {
 
   case class Typer private (classTypes: Map[TypeName, Type], moduleTypes: Map[TermName, Type], outerName: TermName) {
 
-    lazy val packageName: String = c.typecheck(q"object ${TermName(c.freshName("ScaLALR$"))}").symbol.owner.fullName
+    lazy val packageName: String = c.typecheck(q"object ${TermName(MacroUtilities.freshName)}").symbol.owner.fullName
 
     def check (tree: Tree): Type = treeToTypeMemo.getOrElseUpdate(tree, resolveType(tree))
 
@@ -94,8 +94,8 @@ trait TyperModule {
       val classDefs = collectClassDefs(body)
       val moduleDefs = collectModuleDefs(body)
 
-      val nameAndType_Class = classDefs.map(TermName(c.freshName("ScaLALR$")) -> _.name).toMap
-      val nameAndType_Module = moduleDefs.map(TermName(c.freshName("ScaLALR$")) -> _.name).toMap
+      val nameAndType_Class = classDefs.map(TermName(MacroUtilities.freshName) -> _.name).toMap
+      val nameAndType_Module = moduleDefs.map(TermName(MacroUtilities.freshName) -> _.name).toMap
 
       val classExprs = nameAndType_Class.map { case (n, t) => q"def $n : $t = null" }.toList
       val moduleExprs = nameAndType_Module.map { case (n, t) => q"def $n : $t.type = null" }.toList

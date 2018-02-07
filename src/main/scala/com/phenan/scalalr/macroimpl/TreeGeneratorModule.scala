@@ -4,7 +4,7 @@ package macroimpl
 import shared._
 
 trait TreeGeneratorModule {
-  this: CodeGeneratorModule with TyperModule with SyntaxGeneratorModule with SyntaxInfoModule with SyntaxRuleModule with MacroModule =>
+  this: CodeGeneratorModule with TyperModule with SyntaxGeneratorModule with SyntaxInfoModule with SyntaxRuleModule with MacroUtilitiesModule with MacroModule =>
 
   import c.universe._
 
@@ -21,7 +21,7 @@ trait TreeGeneratorModule {
 
     def generateProgram (modules: List[Tree]): GeneratedCode = modules
 
-    def generateUniqueName: String = c.freshName("ScaLALR$")
+    def generateUniqueName: String = MacroUtilities.freshName
 
     def literalIdentifier (lit: LiteralToken): Option[String] = None
 

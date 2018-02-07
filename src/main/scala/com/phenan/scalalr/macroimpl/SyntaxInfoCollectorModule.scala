@@ -1,7 +1,7 @@
 package com.phenan.scalalr.macroimpl
 
 trait SyntaxInfoCollectorModule {
-  this: AnnotationFinderModule with SyntaxInfoModule with MacroUtilitiesModule with MacroModule =>
+  this: AnnotationFinderModule with SyntaxInfoModule with CommonNamesModule with MacroUtilitiesModule with MacroModule =>
 
   import c.universe._
 
@@ -145,14 +145,14 @@ trait SyntaxInfoCollectorModule {
 
   private def variableParameterSyntax (componentType: Tree, sep: Option[String]): List[SyntaxInfo] = sep match {
     case Some(s) =>
-      List(SyntaxInfo.epsilonOperator(tq"Seq[$componentType]", q"scala.collection.immutable.List.empty[$componentType]"),
-           SyntaxInfo.unaryOperator(tq"Seq[$componentType]", Nil, componentType, Nil, arg => q"scala.collection.immutable.List($arg)"),
-           SyntaxInfo.binaryOperator(tq"Seq[$componentType]", Nil, componentType, Nil, tq"com.phenan.scalalr.internal.SeqTail[$componentType]", Nil, (x, xs) => q"$x +: $xs.toSeq"),
-           SyntaxInfo.unaryOperator(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(s), componentType, Nil, arg => q"com.phenan.scalalr.internal.ConsSeqTail($arg, com.phenan.scalalr.internal.SeqTail.empty)"),
-           SyntaxInfo.binaryOperator(tq"com.phenan.scalalr.internal.SeqTail[$componentType]", List(s), componentType, Nil, tq"com.phenan.scalalr.internal.SeqTail[$componentType]", Nil, (x, xs) => q"com.phenan.scalalr.internal.ConsSeqTail($x, $xs)"))
+      List(SyntaxInfo.epsilonOperator(seqTypeTreeOf(componentType), getNilListOf(componentType)),
+           SyntaxInfo.unaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, arg => makeSingleElementList(componentType, arg)),
+           SyntaxInfo.binaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, seqTailTypeTreeOf(componentType), Nil, (x, xs) => consSeq(x, seqTailToSeq(xs))),
+           SyntaxInfo.unaryOperator(seqTailTypeTreeOf(componentType), List(s), componentType, Nil, arg => makeSingleElementSeqTail(componentType, arg)),
+           SyntaxInfo.binaryOperator(seqTailTypeTreeOf(componentType), List(s), componentType, Nil, seqTailTypeTreeOf(componentType), Nil, (x, xs) => consSeqTail(x, xs)))
     case None =>
-      List(SyntaxInfo.epsilonOperator(tq"Seq[$componentType]", q"scala.collection.immutable.List.empty[$componentType]"),
-           SyntaxInfo.binaryOperator(tq"Seq[$componentType]", Nil, componentType, Nil, tq"Seq[$componentType]", Nil, (x, xs) => q"$x +: $xs"))
+      List(SyntaxInfo.epsilonOperator(seqTypeTreeOf(componentType), getNilListOf(componentType)),
+           SyntaxInfo.binaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, seqTypeTreeOf(componentType), Nil, (x, xs) => consSeq(x, xs)))
   }
 
   /**
@@ -222,6 +222,6 @@ trait SyntaxInfoCollectorModule {
   private case class NormalOperand (name: TermName, valType: Tree) extends Operand
 
   private case class RepOperand (name: TermName, componentType: Tree) extends Operand {
-    override def valType: Tree = tq"Seq[$componentType]"
+    override def valType: Tree = seqTypeTreeOf(componentType)
   }
 }
