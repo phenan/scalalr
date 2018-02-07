@@ -67,7 +67,7 @@ trait TyperModule {
       case AppliedTypeTree(typeConstructor, args) =>
         c.typecheck(tq"$typeConstructor[..${args.map(check)}]", c.TYPEmode).tpe.dealias
       case Annotated(AnnotationTree(ann, args), t) =>
-        c.typecheck(tq"${check(t)}@${TypeName(ann)}(..$args)", c.TYPEmode).tpe.dealias
+        c.typecheck(tq"${check(t)}@$ann(..$args)", c.TYPEmode).tpe.dealias
       case _ =>
         c.typecheck(tree, c.TYPEmode).tpe.dealias
     }

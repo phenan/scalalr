@@ -120,7 +120,7 @@ trait SyntaxInfoCollectorModule {
   private def operatorRule (mod: Modifiers, paramLists: List[List[ValDef]], returnType: Tree, semantics: (List[Tree] => List[List[Tree]]) => SemanticActionImpl): List[SyntaxInfo] = {
     val TypeWithSyntaxAnnotation(annotations, ret) = returnType
 
-    ( findAnnotation("syntax", mod) ++ annotations ).flatten.flatMap { syntax =>
+    ( findSyntaxAnnotation(mod) ++ annotations ).flatten.flatMap { syntax =>
       val (operandLists, ss) = variableParameterRules(paramLists)
       syntaxAnnotationRule(syntax, operandLists, ret, semantics) :: ss
     }
