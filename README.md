@@ -1,68 +1,79 @@
 # ScaLALR : LALR parser generator for embedded DSLs in Scala
 
 ScaLALR is a parser generator but it generates just a library in Scala.
-You can use your own syntax in your Scala project.
- 
-ScaLALR emulates LALR(1) parsing by expressing shift & reduce operations by implicit conversions and implicit parameters.
-So it can express any LR languages but all terminals should be an identifier in Scala.
+You can define and use your own syntax in your Scala project. 
+ScaLALR emulates LALR(1) parsing by exploiting type checking in Scala.
 
-## Usage
+## Quick tour
 
-### write syntax file
+The following program is an example of a definition of DSL syntax by using ScaLALR.
 
-```
-syntax MathDSL (program) {
-  program = stmts | stmt    ;
-  stmts = stmt program      ;
-  stmt = expr "end"         ;
-  expr = add | sub | term   ;
-  add = expr "plus" term    ;
-  sub = expr "minus" term   ;
-  term = mul | div | factor ;
-  mul = term "mul" factor   ; 
-  div = term "div" factor   ; 
-  factor = paren | num      ; 
-  paren = "lp" expr "rp"    ; 
-  num = int                 ; 
+```scala
+import com.phenan.scalalr._
+
+@dsl[JValue]
+object JSONSyntax {
+  @syntax(s"[ $values ]")
+  def jArray (values: JValue@sep(",")*): JArray = JArray(values.toList)
+  
+  @syntax(s"{ $fields }")
+  def jObject (fields: JField@sep(",")*): JObject = JObject(fields.toList)
+  
+  @syntax(s"$name : $value")
+  def jField (name: String, value: JValue): JField = JField(name, value)
+  
+  @syntax(s"$value")
+  def jDouble (value: Double): JDouble = JDouble(value)
+  
+  @syntax(s"$value")
+  def jLong (value: Long): JLong = JLong(value)
+  
+  @syntax(s"$value")
+  def jBool (value: Boolean): JBool = JBool(value)
+  
+  @syntax(s"$value")
+  def jString (value: String): JString = JString(value)
 }
 ```
 
-The source code above declares syntax named `MathDSL`.
-The start symbol of this syntax is `program`.
-The syntax rules are written in the following curly-braced code block.
-Each rules are separated by semicolons.
-Identifiers such as `program` and `stmts` are a non-terminal symbol.
-Double-quoted strings such as `"end"` and `"plus"` are a terminal symbol.
-`int` (or `id`) is a pre-defined terminal symbol that recognizes `int(<int value>)` (or `id(<string value>)`).
-For easy to analyze, a rule including "or" rule `|` must be a simple rule as follows:
+This definition allows you to write JSON-like program as follows:
 
-```
-  expr = add | sub | term
-```
+```scala
+val doubleValue: JValue = (10.0)
 
-`|` cannot take a complex parsing expression as its operands.
+val jsonArray: JValue = $$bracketleft (10.0)$$comma ("hello") $$bracketright
 
-
-### run our parser generator
-
-```
-  $ sbt "run <syntax file>"
+val jsonObject: JValue = (
+  $$braceleft
+    ("foo") $$colon (false)$$comma
+    ("bar") $$colon $$bracketleft ("baz")$$comma (20.0) $$bracketright
+  $$braceright
+)
 ```
 
-If you run our parser generator, it outputs a source program in Scala to the standard output.
-You can use the syntax you defined in your scala program by importing the output program.
-To do this, you should copy and paste the output program into a .scala file in your project.
-The following example is an use case of the syntax that defined above.
+This code looks quite strange, however,
+if you use the custom font that supports several ligatures,
+the code is displayed as follows:
 
+<img width="387" alt="2018-02-08 16 34 20" src="https://user-images.githubusercontent.com/4749268/35960681-f362da7c-0ced-11e8-8053-5baa0c7752cf.png">
+
+## Installation
+
+This project currently supports Scala 2.12.
+You should add the following to your `build.sbt`.
+
+```sbtshell
+  resolvers += Resolver.jcenterRepo
+  
+  libraryDependencies += "com.phenan" %% "scalalr" % "2.3.1"
+  
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
-object Main {
-  import MathDSL._
-  def main (args: Array[String]): Unit = {
-    val program: Program = lp int(10) plus int(2) rp mul lp int(10) div int(5) rp end
-    println(program)
-  }
-}
-```
+
+
+## DSL syntax definition
+
+
 
 ## Author
 
