@@ -1,4 +1,4 @@
-# ScaLALR : LALR parser generator for embedded DSLs in Scala
+# ScaLALR : Type-Safe Syntax Extension in Scala
 
 ScaLALR is a parser generator but it generates just a library in Scala.
 You can define and use your own syntax in your Scala project. 
@@ -39,6 +39,10 @@ object JSONSyntax {
 This definition allows you to write JSON-like program as follows:
 
 ```scala
+import com.phenan.scalalr._
+import scala.language.postfixOps
+import JSONSyntax._
+
 val doubleValue: JValue = (10.0)
 
 val jsonArray: JValue = $$bracketleft (10.0)$$comma ("hello") $$bracketright
@@ -52,7 +56,7 @@ val jsonObject: JValue = (
 ```
 
 This code looks quite strange, however,
-if you use the custom font that supports several ligatures,
+if you use our custom font that supports several ligatures,
 the code is displayed as follows:
 
 <img width="387" alt="2018-02-08 16 34 20" src="https://user-images.githubusercontent.com/4749268/35960681-f362da7c-0ced-11e8-8053-5baa0c7752cf.png">
@@ -70,10 +74,20 @@ You should add the following to your `build.sbt`.
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```
 
+We provide a custom font for ScaLALR, named Scalig.
+The font file is placed in `font` directory.
+
+If you want to fully use ScaLALR, 
+please change the font to Scalig and enable the font ligatures of your editor.
+
 
 ## DSL syntax definition
 
+...
 
+## Using DSLs
+
+...
 
 ## Author
 
