@@ -1,1 +1,4 @@
-font/* filter=lfs diff=lfs merge=lfs -text
+font/Scalig-Regular.ttf filter=lfs diff=lfs merge=lfs -text
+font/Scalig-Bold.ttf filter=lfs diff=lfs merge=lfs -text
+font/Scalig-Regular.glyphs filter=lfs diff=lfs merge=lfs -text
+font/Scalig-Bold.glyphs filter=lfs diff=lfs merge=lfs -text
