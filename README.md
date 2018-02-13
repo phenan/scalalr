@@ -83,7 +83,91 @@ please change the font to Scalig and enable the font ligatures of your editor.
 
 ## DSL syntax definition
 
-...
+### Annotate `@dsl` to the declaration of a singleton object
+
+To define your own DSL, you declare a singleton object with `@dsl` annotation.
+The `@dsl` annotation takes a type argument.
+The given type argument expresses that this is a DSL for a value of the type.
+
+```scala
+@dsl[JValue]
+object JSONSyntax {
+  // declarations of DSL
+}
+```
+
+### Define DSL syntax by declaring methods with `@syntax` annotation
+
+You can define syntax by attaching `@syntax` annotation to a method declaration 
+in the body of the singleton object.
+`@syntax` annotation takes an argument of the form `s"..."` that expresses the syntax of the method.
+For example, look at the following declaration:
+
+```scala
+@syntax(s"$name : $value")
+def jField (name: String, value: JValue): JField = JField(name, value)
+```
+
+Here, `$name : $value` indicates the syntax.
+An identifier preceded by `$` such as `$name` indicates an argument part of the syntax
+and the identifier corresponds to a parameter name.
+So this declaration means that you can use the syntax like `x : y` and 
+`jField(x, y)` is called in this case.
+Of course, such the syntax is available only at the limited expression.
+This syntax is only available at the expression that expects a value of `JField`.
+Like this, you can define your own DSL by declaring syntax for each types.
+
+
+### Another use case of `@syntax` annotation
+
+Unfortunately, `@syntax` annotation causes an error reporting in IntelliJ.
+(In fact, `@syntax` annotation causes a compilation error if you use it without `@dsl` annotation.)
+So we enable the `@syntax` annotation to attach to the return type of functions as follows:
+
+```scala
+def jField (name: String, value: JValue): JField @syntax(s"$name : $value") = JField(name, value)
+```
+
+This does not cause an error reporting in IntelliJ, because `name` and `value` can be referred from there.
+
+
+If you define your own types for your DSL, 
+you can declare your syntax by attaching `@syntax` annotations to your class definitions instead of methods.
+The following is an example:
+
+```scala
+@dsl[Math.Expr]
+object Math {
+  sealed trait Expr
+
+  @syntax(s"$n + $m")
+  case class Add (n: Expr, m: Int) extends Expr
+
+  @syntax(s"$n - $m")
+  case class Sub (n: Expr, m: Int) extends Expr
+
+  @syntax(s"$n")
+  case class Num (n: Int) extends Expr
+}
+```
+
+### Expressing repetitions
+
+To express a repetition, you can use variable arguments and `@sep` annotation.
+For example, the following uses variable arguments with `@sep` annotation.
+
+```scala
+@syntax(s"[ $values ]")
+def jArray (values: JValue@sep(",")*): JArray = JArray(values.toList)
+```
+
+This expresses the syntax that recognizes
+`[]`, `[a]`, `[a, b]`, `[a, b, c]`, and so on.
+`$values` in the `@syntax` annotation indicates an argument
+and the corresponding parameter `values` is a parameter taking variable arguments.
+The element type of the variable arguments is `JValue@sep(",")`, 
+which means that the argument takes zero or more values of `JValue` and each arguments are separated by `,`.
+
 
 ## Using DSLs
 
