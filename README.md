@@ -171,7 +171,82 @@ which means that the argument takes zero or more values of `JValue` and each arg
 
 ## Using DSLs
 
-...
+If you want to use your DSL, 
+you should import all members of your singleton object that you have declared with `@dsl` annotation.
+You must also import `com.phenan.scalalr._` and `scala.language.postfixOps` to use DSLs defined in ScaLALR.
+
+```scala
+import com.phenan.scalalr._
+import scala.language.postfixOps
+import JSONSyntax._
+```
+
+Now, you can use your DSL syntax.
+To use the DSL, you have to explicitly write the return type of a DSL program.
+
+If your DSL program is a single line program,
+the next line of the program should be a blank line.
+If your DSL program is a multiline,
+you should enclose your program with parentheses.
+
+```scala
+val doubleValue: JValue = (10.0)
+
+val jsonArray: JValue = $$bracketleft (10.0)$$comma ("hello") $$bracketright
+
+val jsonObject: JValue = (
+  $$braceleft
+    ("foo") $$colon (false)$$comma
+    ("bar") $$colon $$bracketleft ("baz")$$comma (20.0) $$bracketright
+  $$braceright
+)
+```
+
+
+You can use a Scala expression as a part of a DSL program.
+To do so, you should enclose the Scala expression with parentheses.
+You can write a Scala code enclosed by parentheses in any argument part of DSL syntax.
+
+
+Symbols in the syntax of the DSL are automatically translated into other identifiers as shown below.
+Our font, Scalig, provides ligatures that make these identifiers look the same as the original symbols.
+
+
+| symbol | identifier |
+|:------:|------------|
+| !      | $$exclam          |
+| "      | $$quotedbl          |
+| #      | $$numbersign          |
+| %      | $$percent          |
+| &      | $$ampersand          |
+| '      | $$quotesingle          |
+| (      | $$parenleft          |
+| )      | $$parenright          |
+| *      | $$asterisk          |
+| +      | $$plus          |
+| ,      | $$comma          |
+| -      | $$hyphen          |
+| .      | $$period          |
+| /      | $$slash          |
+| :      | $$colon          |
+| ;      | $$semicolon          |
+| <      | $$less          |
+| =      | $$equal          |
+| &gt;   | $$greater          |
+| ?      | $$question          |
+| @      | $$at          |
+| [      | $$bracketleft          |
+| \      | $$backslash          |
+| ]      | $$bracketright          |
+| ^      | $$asciicircum          |
+| `      | $$grave          |
+| {      | $$braceleft          |
+| &#124; | $$bar          |
+| }      | $$braceright          |
+| ~      | $$asciitilde          |
+  
+
+
 
 ## Author
 
