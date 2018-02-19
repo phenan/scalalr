@@ -143,16 +143,12 @@ trait SyntaxInfoCollectorModule {
     }
   }
 
-  private def variableParameterSyntax (componentType: Tree, sep: Option[String]): List[SyntaxInfo] = sep match {
-    case Some(s) =>
-      List(SyntaxInfo.epsilonOperator(seqTypeTreeOf(componentType), getNilListOf(componentType)),
-           SyntaxInfo.unaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, arg => makeSingleElementList(componentType, arg)),
-           SyntaxInfo.binaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, seqTailTypeTreeOf(componentType), Nil, (x, xs) => consSeq(x, seqTailToSeq(xs))),
-           SyntaxInfo.unaryOperator(seqTailTypeTreeOf(componentType), List(s), componentType, Nil, arg => makeSingleElementSeqTail(componentType, arg)),
-           SyntaxInfo.binaryOperator(seqTailTypeTreeOf(componentType), List(s), componentType, Nil, seqTailTypeTreeOf(componentType), Nil, (x, xs) => consSeqTail(x, xs)))
-    case None =>
-      List(SyntaxInfo.epsilonOperator(seqTypeTreeOf(componentType), getNilListOf(componentType)),
-           SyntaxInfo.binaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, seqTypeTreeOf(componentType), Nil, (x, xs) => consSeq(x, xs)))
+  private def variableParameterSyntax (componentType: Tree, sep: Option[String]): List[SyntaxInfo] = {
+    List(SyntaxInfo.epsilonOperator(seqTypeTreeOf(componentType), getNilListOf(componentType)),
+         SyntaxInfo.unaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, arg => makeSingleElementList(componentType, arg)),
+         SyntaxInfo.binaryOperator(seqTypeTreeOf(componentType), Nil, componentType, Nil, seqTailTypeTreeOf(componentType), Nil, (x, xs) => consSeq(x, seqTailToSeq(xs))),
+         SyntaxInfo.unaryOperator(seqTailTypeTreeOf(componentType), sep.toList, componentType, Nil, arg => makeSingleElementSeqTail(componentType, arg)),
+         SyntaxInfo.binaryOperator(seqTailTypeTreeOf(componentType), sep.toList, componentType, Nil, seqTailTypeTreeOf(componentType), Nil, (x, xs) => consSeqTail(x, xs)))
   }
 
   /**

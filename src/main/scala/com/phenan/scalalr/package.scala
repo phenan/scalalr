@@ -6,6 +6,10 @@ import scala.language.implicitConversions
 
 package object scalalr {
 
+  implicit class LiteralOps [T] (t: T) {
+    def apply [U] (value: TokenListCons[Literal[U], TokenListSentinel]): TokenListCons[Literal[U], TokenListCons[Literal[T], TokenListSentinel]] = TokenListCons(value.head, singleToken(Literal(t)))
+  }
+
   implicit class TokenListOps [T <: TokenList] (t: T) {
     def apply [U] (value: TokenListCons[Literal[U], TokenListSentinel]): TokenListCons[Literal[U], T] = TokenListCons(value.head, t)
   }
@@ -30,5 +34,5 @@ package object scalalr {
 
   def $$semicolon : TokenListCons[EoI.type, TokenListSentinel] = singleToken(EoI)
 
-  val scaLALRVersion: String = "2.3.1"
+  val scaLALRVersion: String = "2.3.2"
 }

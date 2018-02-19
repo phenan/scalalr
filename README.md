@@ -69,7 +69,7 @@ You should add the following to your `build.sbt`.
 ```sbtshell
   resolvers += Resolver.jcenterRepo
   
-  libraryDependencies += "com.phenan" %% "scalalr" % "2.3.1"
+  libraryDependencies += "com.phenan" %% "scalalr" % "2.3.2"
   
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 ```

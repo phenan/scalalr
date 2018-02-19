@@ -4,7 +4,7 @@ name := "scalalr"
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
-version := "2.3.1"
+version := "2.3.2"
 
 scalaVersion := "2.12.4"
 
