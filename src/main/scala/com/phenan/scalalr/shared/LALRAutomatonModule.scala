@@ -35,11 +35,11 @@ trait LALRAutomatonModule {
 
     /**
       * reduce: 非終端記号の導出による遷移
-      * 遷移元 LR closure -> (文法式, 先読み記号の集合)
+      * 遷移元 List[ (LR closure, 文法式, 先読み記号の集合) ]
       */
-    lazy val reduce: Map[LRClosure, (Rule, Set[Terminal])] = nodes.flatMap { closure =>
+    lazy val reduce: List[(LRClosure, Rule, Set[Terminal])] = nodes.flatMap { closure =>
       closure.items.collect { case (LRItem(rule, Nil), lookahead) =>
-        (closure, (rule, lookahead))
+        (closure, rule, lookahead)
       }
     } (breakOut)
 

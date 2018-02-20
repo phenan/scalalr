@@ -193,7 +193,7 @@ trait CodeGeneratorModule {
       * Reduce 操作を表す implicit value の定義
       */
     lazy val reduceImplicitDefinitions: List[MemberDef] = for {
-      (from, (rule, lookahead)) <- automaton.reduce.toList
+      (from, rule, lookahead) <- automaton.reduce.toList
       path <- reducePath(from, rule)
       la   <- lookahead
       dest <- automaton.goTo(path.head).get(rule.left)

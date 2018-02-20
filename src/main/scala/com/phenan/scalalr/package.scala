@@ -34,5 +34,5 @@ package object scalalr {
 
   def $$semicolon : TokenListCons[EoI.type, TokenListSentinel] = singleToken(EoI)
 
-  val scaLALRVersion: String = "2.3.2"
+  val scaLALRVersion: String = "2.3.3"
 }
